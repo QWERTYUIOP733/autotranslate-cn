@@ -1,0 +1,10 @@
+{
+  "required": true,
+  "package": "com.autotranslate.mixin",
+  "mixins": [
+    "LanguageMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

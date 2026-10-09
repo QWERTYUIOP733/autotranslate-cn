@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "autotranslate",
+  "version": "${version}",
+  "name": "Auto Translate CN 自动汉化",
+  "description": "内置翻译字典的自动汉化模组：拦截游戏翻译查询，把未汉化的文本离线替换为简体中文。支持外部词典扩展（config/autotranslate/dict）。",
+  "authors": [],
+  "contact": {},
+  "license": "MIT",
+  "icon": "assets/autotranslate/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.autotranslate.AutoTranslateMod"
+    ],
+    "client": [
+      "com.autotranslate.client.AutoTranslateModClient"
+    ]
+  },
+  "mixins": [
+    "autotranslate.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "minecraft": "~26.3",
+    "java": ">=25",
+    "fabric-api": "*"
+  }
+}

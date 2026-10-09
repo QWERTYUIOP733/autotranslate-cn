@@ -1,0 +1,14 @@
+pluginManagement {
+    repositories {
+        // 本地 Fabric maven 镜像（离线优先，避免官方源超时）
+        maven { url = uri('file:///D:/dev/fabric-maven-mirror') }
+        maven {
+            name = 'Fabric'
+            url = 'https://maven.fabricmc.net/'
+        }
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+rootProject.name = 'AutoTranslateMod'

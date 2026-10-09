@@ -1,0 +1,29 @@
+# 构建产物
+build/
+out/
+
+# Gradle
+.gradle/
+!gradle/wrapper/gradle-wrapper.jar
+
+# 运行环境
+run/
+logs/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+bin/
+
+# 系统文件
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# 本地敏感信息
+*.tmp
+.gh_token*

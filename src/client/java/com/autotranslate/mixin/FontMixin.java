@@ -2,6 +2,7 @@ package com.autotranslate.mixin;
 
 import com.autotranslate.Dictionary;
 import com.autotranslate.HardcodedTextTranslator;
+import com.autotranslate.MissingKeysRecorder;
 import com.autotranslate.ModConfig;
 import net.minecraft.client.gui.Font;
 import net.minecraft.network.chat.Component;
@@ -54,6 +55,10 @@ public abstract class FontMixin {
             } catch (Exception e) {
                 return seq;
             }
+        }
+        // 未命中：若像是 UI 文本则记录（供词典补全闭环），聊天/世界内容不记录
+        if (HardcodedTextTranslator.isUiText(text)) {
+            MissingKeysRecorder.recordHardcoded(text);
         }
         return seq;
     }

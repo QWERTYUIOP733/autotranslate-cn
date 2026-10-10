@@ -27,10 +27,9 @@ public final class HardcodedTextTranslator {
         if (!ModConfig.isDeepTranslateOn() || text == null) {
             return null;
         }
-        if (!looksLikeUiText(text)) {
+        if (!isUiText(text)) {
             return null;
-        }
-        // 1. 词典命中 → 直接替换
+        }        // 1. 词典命中 → 直接替换
         String zh = Dictionary.lookupKey(text);
         if (zh == null) {
             zh = Dictionary.lookupText(text);
@@ -47,8 +46,8 @@ public final class HardcodedTextTranslator {
         return null;
     }
 
-    /** 判断是否值得翻译的 UI 短文本（防止误翻玩家/世界内容） */
-    private static boolean looksLikeUiText(String text) {
+    /** 判断是否值得翻译的 UI 短文本（防止误翻玩家/世界内容）。公开供渲染层各通道复用。 */
+    public static boolean isUiText(String text) {
         int len = text.length();
         if (len < 2 || len > 64) {
             return false;

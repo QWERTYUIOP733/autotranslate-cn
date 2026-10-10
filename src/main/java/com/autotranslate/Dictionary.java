@@ -14,6 +14,7 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -35,6 +36,8 @@ public final class Dictionary {
 
     private static volatile Map<String, String> byKey = Map.of();
     private static volatile Map<String, String> byText = Map.of();
+    /** 小写归一化索引：byText 的英文原文忽略大小写也能命中（如 "iron sword" -> "Iron Sword"） */
+    private static volatile Map<String, String> byTextLower = Map.of();
 
     /** 在线翻译结果缓冲：翻译线程写入，定时线程批量落盘（避免翻译风暴时每次全量 IO） */
     private static final Map<String, String> PENDING_CACHE = new HashMap<>();
@@ -62,7 +65,14 @@ public final class Dictionary {
 
         byKey = Map.copyOf(newKey);
         byText = Map.copyOf(newText);
+        byTextLower = buildLowerIndex(newText);
         LOGGER.info("[自动汉化] 词典加载完成：byKey={} 条，byText={} 条", byKey.size(), byText.size());
+    }
+
+    private static Map<String, String> buildLowerIndex(Map<String, String> textMap) {
+        Map<String, String> lower = new HashMap<>();
+        textMap.forEach((en, zh) -> lower.put(en.toLowerCase(Locale.ROOT), zh));
+        return Map.copyOf(lower);
     }
 
     private static void loadBuiltin(Map<String, String> keyMap, Map<String, String> textMap) {
@@ -160,9 +170,16 @@ public final class Dictionary {
         return key == null ? null : byKey.get(key);
     }
 
-    /** 按英文原文查中文；未命中返回 null */
+    /** 按英文原文查中文；未命中返回 null。先精确匹配，再小写归一化匹配。 */
     public static String lookupText(String text) {
-        return text == null ? null : byText.get(text);
+        if (text == null) {
+            return null;
+        }
+        String zh = byText.get(text);
+        if (zh == null) {
+            zh = byTextLower.get(text.toLowerCase(Locale.ROOT));
+        }
+        return zh;
     }
 
     /** 词典总条数 */
@@ -185,6 +202,9 @@ public final class Dictionary {
         }
         newText.put(englishText, zh);
         byText = Map.copyOf(newText);
+        Map<String, String> lower = new HashMap<>(byTextLower);
+        lower.put(englishText.toLowerCase(Locale.ROOT), zh);
+        byTextLower = Map.copyOf(lower);
         synchronized (PENDING_CACHE) {
             PENDING_CACHE.put(englishText, zh);
         }

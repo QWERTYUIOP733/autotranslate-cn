@@ -6,7 +6,7 @@
 ## 功能
 
 - 拦截原版与所有模组的 translatable 文本，按词典自动汉化
-- 内置骨架词典（`assets/autotranslate/lang/zh_cn_dict.json`）
+- 内置完整翻译词典（`assets/autotranslate/lang/zh_cn_dict.json`）：byKey 8,578 条 + byText 7,655 条，覆盖 Minecraft 26.3 官方全部翻译键
 - 支持外部词典扩展：把任意 `.json` 词典放入 `config/autotranslate/dict/` 即自动加载
 - 词典热重载：游戏内执行 `/autotranslate reload`
 - 状态查看：`/autotranslate status`
@@ -15,8 +15,9 @@
 ## 安装
 
 1. 安装 Fabric Loader 0.19.5+（26.3 版本），并将游戏语言设为简体中文
-2. 将 `autotranslate-1.0.0.jar` 放入 `mods` 文件夹
-3. 启动游戏即可生效
+2. 安装 Fabric API（0.161.0+26.3 或更高，本模组依赖）
+3. 将 `autotranslate-1.1.0.jar` 放入 `mods` 文件夹
+4. 启动游戏即可生效
 
 ## 外部词典格式
 
@@ -52,16 +53,14 @@
 ## 构建
 
 ```bash
-# 需要：JDK 25（本机 D:\dev\jdk-25）、Gradle 9.6+（本机 D:\dev\gradle-9.7.1）
-set JAVA_HOME=D:\dev\jdk-25
-set GRADLE_USER_HOME=D:\dev\gradle-home
-gradle build
-# 产物：build/libs/autotranslate-1.0.0.jar
+# 一键构建（自动设置 JDK 25 与 Gradle 缓存，产物在 D 盘）
+build.bat
+# 产物：build/libs/autotranslate-1.1.0.jar
 ```
 
 ## 技术要点
 
-- 版本锁定：Minecraft 26.3 / Fabric Loader 0.19.5 / Fabric API 0.162.0+26.3 / Loom 1.17.21
+- 版本锁定：Minecraft 26.3 / Fabric Loader 0.19.5 / Fabric API 0.162.0+26.3 / Loom 1.18.3
 - 26.1 起游戏不再混淆，直接使用 Mojang 官方类名（如 `net.minecraft.locale.Language`）
 - Mixin 双注入点：`@Inject(HEAD)` 实现"词典优先"，`@Inject(RETURN)` 实现"仅补缺 + 英文原文匹配"
 - 代码结构：入口（命令注册）/ 客户端初始化 / 词典加载器 / 配置 / Mixin 拦截器

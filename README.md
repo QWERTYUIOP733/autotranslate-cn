@@ -40,6 +40,20 @@
 
 > 没有本地引擎时，模组默认使用 Google 免费在线接口（「翻译引擎=自动识别」可自动兼容两种协议）。
 
+## 授权与版权（重要）
+
+本项目采用**三层授权**，数据与代码分离：
+
+| 内容 | 许可证/版权 | 说明 |
+|---|---|---|
+| 模组代码（Java/Mixin/配置） | **MIT**（`LICENSE` / `LICENSE_autotranslate`） | 可自由使用、修改、分发（需保留版权声明） |
+| 内置 CFPA 模组翻译包（`cfpa_mods.zip`） | **CC BY-NC-SA 4.0**（`LICENSE_CFPA`，随 jar 分发） | 数据来源 [CFPAOrg/Minecraft-Mod-Language-Package](https://github.com/CFPAOrg/Minecraft-Mod-Language-Package)；**仅限非商业用途**，修改/再分发须相同方式共享并署名 |
+| 内置官方翻译词典（`zh_cn_dict.json`） | 版权归 **Mojang Studios / Microsoft** | 提取自 Minecraft 26.3 官方语言文件，仅作本地化使用，与代码分离 |
+| 补充翻译（`extra_zh_cn.json`，661 条） | 本项目原创（MIT） | 针对 CFPA 缺失键的手工翻译，保留原版术语风格 |
+
+- 内置的补充翻译与在线/本地翻译缓存结果均为本项目原创，不触发 CC BY-NC-SA 的相同方式共享义务
+- 本地 AI 翻译为可选外部工具：**Argos Translate**（MIT，第三方，未打包进 jar，运行时由用户自行安装）
+
 ## 模组汉化数据来源与许可
 
 - **CFPA 模组翻译包**（[CFPAOrg/Minecraft-Mod-Language-Package](https://github.com/CFPAOrg/Minecraft-Mod-Language-Package)），许可证 **CC BY-NC-SA 4.0**（见 `LICENSE_CFPA`），仅限非商业用途
@@ -64,7 +78,7 @@
 }
 ```
 
-> 提示：CFPA「Minecraft Mod Language Package」的 `zh_cn.json` 可直接放入外部词典目录使用（注意遵守其开源许可）。
+> 提示：CFPA「Minecraft Mod Language Package」的 `zh_cn.json` 可直接放入外部词典目录使用（注意遵守其开源许可 CC BY-NC-SA 4.0）。
 
 ## 配置文件
 

@@ -1,5 +1,12 @@
 # 自动汉化模组 更新日志
 
+## v1.5.1 (2026-10-10)
+
+### 🔧 合规整改
+- 开源合规自查整改：README 新增「授权与版权」小节，明确三层授权——模组代码 MIT / CFPA 数据 CC BY-NC-SA 4.0（随 jar 分发 LICENSE_CFPA）/ 官方词典版权归 Mojang；补充翻译（661 条）与缓存结果标注为原创
+- fabric.mod.json 补全 authors 元数据
+- 本地 AI 工具（Argos Translate，MIT）明确标注为第三方外部依赖
+
 ## v1.5.0 (2026-10-10)
 
 ### ✨ 功能

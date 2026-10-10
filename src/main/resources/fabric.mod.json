@@ -4,7 +4,9 @@
   "version": "${version}",
   "name": "Auto Translate CN 自动汉化",
   "description": "内置翻译字典的自动汉化模组：自动扫描 mods 文件夹中所有其他模组并汉化其界面文本（内置 CFPA 模组翻译包，CC BY-NC-SA 4.0）。支持外部词典扩展（config/autotranslate/dict）。",
-  "authors": [],
+  "authors": [
+    "QWERTYUIOP733"
+  ],
   "contact": {},
   "license": "MIT",
   "icon": "assets/autotranslate/icon.png",

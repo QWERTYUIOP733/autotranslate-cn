@@ -40,6 +40,10 @@ dependencies {
 
     // Mod Menu（仅编译期依赖，运行时可选：装了 Mod Menu 才有配置界面，不装不影响功能）
     compileOnly files("libs/modmenu-21.0.0.jar")
+
+    // Cloth Config（配置界面库：滚动/分类/下拉/重置；LGPL-3.0 动态链接，不打包进 jar，
+    // 运行时从 mods 加载（fabric.mod.json depends），jar 为成品映射版无需 remap）
+    compileOnly files("libs/cloth-config-fabric-26.3.159.jar")
 }
 
 processResources {

@@ -12,6 +12,6 @@ public class ModMenuIntegration implements ModMenuApi {
 
     @Override
     public ConfigScreenFactory<?> getModConfigScreenFactory() {
-        return AutoTranslateConfigScreen::new;
+        return AutoTranslateConfigScreen::create;
     }
 }

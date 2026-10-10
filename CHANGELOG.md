@@ -1,5 +1,22 @@
 # 自动汉化模组 更新日志
 
+## v2.6.0 (2026-10-10)
+
+### 🎨 配置界面 UI 重构（Cloth Config 版，支持滚动）
+- 配置界面从自绘固定布局迁移到 **Cloth Config API**：自带滚动条/滚轮滚动、分类、下拉选择、撤销/重置/保存按钮
+- 任意窗口尺寸下都能完整查看全部配置项（此前自绘界面在小窗口/高缩放下底部按钮超出屏幕）
+- 配置项升级：
+  - 总开关 / 词典优先 / 本地 AI 翻译 / 导出缺失键 → 开关控件
+  - 翻译引擎（argos/google/auto）、深度汉化（关/词典覆盖/全自动）→ 下拉选择
+  - 翻译服务地址 → 文本输入框
+  - 新增只读状态行：本次扫描模组数 + 词典规模
+- 依赖调整：Cloth Config（LGPL-3.0 动态链接，不打包进 jar）成为必需依赖，fabric.mod.json 已声明
+
+### 📦 安装要求
+- Minecraft 26.3（Java 25）、Fabric Loader 0.19.5+、Fabric API 0.161.0+26.3
+- Cloth Config（>=26.3.0，Modrinth/CurseForge 均有）
+- 本地 AI 服务：运行 local-translator/start.bat（或仓库内 local-translator 副本）
+
 ## v2.5.0 (2026-10-10)
 
 ### ✨ 核心定位升级：本地 AI 默认开启，未收录文本自动翻译

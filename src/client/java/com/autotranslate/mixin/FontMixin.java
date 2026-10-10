@@ -11,6 +11,9 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 /**
  * 深度汉化：拦截字体渲染层的两处绘制入口。
  *
@@ -27,13 +30,36 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
 @Mixin(Font.class)
 public abstract class FontMixin {
 
+    /** 翻译命中结果缓存（text -> 中文 FCS），LRU 上限 512：同文本反复渲染（如配置界面、常驻 UI）避免重复转换 */
+    private static final Map<String, FormattedCharSequence> FCS_CACHE = new LinkedHashMap<>(512, 0.75f, true) {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<String, FormattedCharSequence> eldest) {
+            return size() > 512;
+        }
+    };
+
+    /** String 通道命中缓存（text -> 中文），LRU 上限 512 */
+    private static final Map<String, String> STRING_CACHE = new LinkedHashMap<>(512, 0.75f, true) {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<String, String> eldest) {
+            return size() > 512;
+        }
+    };
+
     @ModifyVariable(method = "prepareText(Ljava/lang/String;FFIZI)Lnet/minecraft/client/gui/Font$PreparedText;",
             at = @At("HEAD"), argsOnly = true, ordinal = 0)
     private String autotranslate$deepTranslateString(String text) {
         if (!ModConfig.isDeepTranslateOn()) {
             return text;
         }
+        String cached = STRING_CACHE.get(text);
+        if (cached != null) {
+            return cached;
+        }
         String zh = HardcodedTextTranslator.translate(text);
+        if (zh != null && STRING_CACHE.size() < 512) {
+            STRING_CACHE.put(text, zh);
+        }
         return zh != null ? zh : text;
     }
 
@@ -47,11 +73,19 @@ public abstract class FontMixin {
         if (text == null || text.isEmpty()) {
             return seq;
         }
+        FormattedCharSequence cached = FCS_CACHE.get(text);
+        if (cached != null) {
+            return cached;
+        }
         // 仅词典精确命中才替换（byText），避免误翻聊天/世界内容
         String zh = Dictionary.lookupText(text);
         if (zh != null) {
             try {
-                return Component.literal(zh).getVisualOrderText();
+                FormattedCharSequence translated = Component.literal(zh).getVisualOrderText();
+                if (FCS_CACHE.size() < 512) {
+                    FCS_CACHE.put(text, translated);
+                }
+                return translated;
             } catch (Exception e) {
                 return seq;
             }

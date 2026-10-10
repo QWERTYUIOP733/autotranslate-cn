@@ -27,8 +27,12 @@ public class AutoTranslateMod implements ModInitializer {
                             }))
                     .then(Commands.literal("status")
                             .executes(context -> {
+                                String mods = String.join(", ", ModScanner.getScannedModIds());
                                 context.getSource().sendSuccess(
-                                        () -> Component.literal("[自动汉化] " + ModConfig.statusText() + "，词典 " + Dictionary.size() + " 条"),
+                                        () -> Component.literal("[自动汉化] " + ModConfig.statusText()
+                                                + "，词典 " + Dictionary.size() + " 条；已扫描模组（"
+                                                + ModScanner.getScannedModIds().size() + " 个）："
+                                                + (mods.isEmpty() ? "无" : mods)),
                                         false);
                                 return 1;
                             })));

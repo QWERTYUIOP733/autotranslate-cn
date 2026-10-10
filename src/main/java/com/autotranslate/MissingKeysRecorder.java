@@ -8,7 +8,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -26,6 +28,8 @@ public final class MissingKeysRecorder {
     private static final Map<String, String> MISSING = new LinkedHashMap<>();
     /** 深度汉化收集的硬编码英文文本（不走翻译系统的），单独导出 */
     private static final java.util.Set<String> HARDCODED = new java.util.LinkedHashSet<>();
+    /** 缺失键按模组归组：modId -> (key -> 原文)，供分模组导出与定位 */
+    private static final Map<String, Map<String, String>> MISSING_BY_MOD = new LinkedHashMap<>();
     /** 单次会话最多记录条数，防止文件无限膨胀 */
     private static final int MAX_RECORDS = 5000;
     private static final int MAX_HARDCODED = 2000;
@@ -44,8 +48,32 @@ public final class MissingKeysRecorder {
         String existing = MISSING.get(id);
         if (existing == null || existing.isEmpty()) {
             MISSING.put(id, englishText == null ? "" : englishText);
+            // 按模组归组：从翻译键前缀识别所属 modId（如 config.phoenix.* -> phoenix）
+            String modId = guessModId(id);
+            if (modId != null) {
+                MISSING_BY_MOD.computeIfAbsent(modId, k -> new LinkedHashMap<>())
+                        .put(id, englishText == null ? "" : englishText);
+            }
             dirty = true;
         }
+    }
+
+    /** 从翻译键推断所属模组：在所有已扫描模组 id 中取"包含于键内"的最长匹配。
+     *  如 key=config.phoenix.option.lowSpinConfig，扫描集合含 phoenix -> 命中 phoenix。 */
+    private static String guessModId(String key) {
+        if (key == null) {
+            return null;
+        }
+        String lower = key.toLowerCase(Locale.ROOT);
+        String best = null;
+        for (String modId : ModScanner.getScannedModIds()) {
+            if (lower.contains(modId.toLowerCase(Locale.ROOT))) {
+                if (best == null || modId.length() > best.length()) {
+                    best = modId;
+                }
+            }
+        }
+        return best;
     }
 
     /** 记录一条深度汉化发现的硬编码英文文本（无翻译键，走渲染层） */
@@ -97,6 +125,17 @@ public final class MissingKeysRecorder {
                     sb.append(e.getKey()).append('=').append(e.getValue().replace("\n", "\\n")).append('\n');
                 }
                 Files.writeString(file, sb.toString(), StandardCharsets.UTF_8);
+                // 按模组分文件：missing_<modid>.txt（仅当该模组 ≥ 1 条时生成，便于定位缺失来源）
+                for (Map.Entry<String, Map<String, String>> mod : MISSING_BY_MOD.entrySet()) {
+                    Path mf = dir.resolve("missing_" + mod.getKey() + ".txt");
+                    StringBuilder msb = new StringBuilder();
+                    msb.append("# 自动汉化模组 - 模组「").append(mod.getKey()).append("」未覆盖翻译键\n");
+                    msb.append("# 每行格式：翻译键=英文原文\n\n");
+                    for (Map.Entry<String, String> e : mod.getValue().entrySet()) {
+                        msb.append(e.getKey()).append('=').append(e.getValue().replace("\n", "\\n")).append('\n');
+                    }
+                    Files.writeString(mf, msb.toString(), StandardCharsets.UTF_8);
+                }
             }
             if (!HARDCODED.isEmpty()) {
                 Path file = dir.resolve("missing_hardcoded.txt");

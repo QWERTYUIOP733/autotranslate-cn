@@ -55,6 +55,8 @@ public final class OnlineTranslator {
     /** 连续失败计数（用于告警） */
     private static final AtomicLong FAIL_STREAK = new AtomicLong(0);
     private static volatile boolean serviceDownWarned = false;
+    /** URL 模板缺 %s 是否已告警（只提示一次，避免每次请求刷屏） */
+    private static volatile boolean urlTemplateWarned = false;
 
     private OnlineTranslator() {
     }
@@ -124,7 +126,8 @@ public final class OnlineTranslator {
                 LAST_REQUEST.set(System.currentTimeMillis());
 
                 String zh = translate(englishText);
-                if (zh != null && !zh.isEmpty() && !zh.equals(englishText)) {
+                if (zh != null && !zh.isEmpty() && !zh.equals(englishText) && Dictionary.isChinese(zh)) {
+                    zh = Dictionary.postProcessTranslation(zh);
                     FAIL_STREAK.set(0);
                     Dictionary.addTextEntry(englishText, zh);
                     LOGGER.debug("[自动汉化] 在线翻译：\"{}\" -> \"{}\"", englishText, zh);
@@ -164,15 +167,33 @@ public final class OnlineTranslator {
     }
 
     private static String doTranslate(String englishText) throws IOException, InterruptedException {
-        String url = ModConfig.getTranslateServiceUrl().replace("%s",
-                URLEncoder.encode(englishText, StandardCharsets.UTF_8));
+        // 多引擎 failover：按配置的多个服务地址依次尝试，第一个成功即返回
+        String encoded = URLEncoder.encode(englishText, StandardCharsets.UTF_8);
+        for (String url : ModConfig.getTranslateServiceUrls()) {
+            try {
+                String zh = doTranslateSingle(url.replace("%s", encoded), englishText);
+                if (zh != null) {
+                    return zh;
+                }
+            } catch (Exception e) {
+                LOGGER.debug("[自动汉化] 翻译服务调用失败，尝试下一个引擎: {}", e.toString());
+            }
+        }
+        return null;
+    }
+
+    private static String doTranslateSingle(String url, String englishText) throws IOException, InterruptedException {
         if (!url.contains("q=") && !url.contains("text=")) {
-            LOGGER.warn("[自动汉化] 翻译服务地址模板缺少 %s 参数位: {}", url);
+            if (!urlTemplateWarned) {
+                urlTemplateWarned = true;
+                LOGGER.warn("[自动汉化] 翻译服务地址模板缺少 %s 参数位: {}", url);
+            }
+            return null;
         }
         HttpRequest req = HttpRequest.newBuilder()
                 .uri(URI.create(url))
                 .timeout(Duration.ofSeconds(8))
-                .header("User-Agent", "Mozilla/5.0 autotranslate/1.6")
+                .header("User-Agent", "Mozilla/5.0 autotranslate/1.10")
                 .GET()
                 .build();
         HttpResponse<String> resp = CLIENT.send(req, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));

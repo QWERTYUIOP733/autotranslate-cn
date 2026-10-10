@@ -14,8 +14,12 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
@@ -35,6 +39,14 @@ public final class ModScanner {
     private static final Logger LOGGER = LoggerFactory.getLogger(AutoTranslateMod.MOD_ID);
     private static final String CFPA_ZIP_RESOURCE = "/assets/autotranslate/cfpa_mods.zip";
     private static final String SELF_PREFIX = "autotranslate-";
+
+    /** 最近一次扫描到的模组 id 集合（供缺失键按模组归组、status 展示） */
+    private static volatile Set<String> scannedModIds = Set.of();
+
+    /** 最近一次扫描到的模组 id（排序后的只读视图，供日志/诊断） */
+    public static Set<String> getScannedModIds() {
+        return scannedModIds;
+    }
 
     private ModScanner() {
     }
@@ -81,9 +93,11 @@ public final class ModScanner {
         }
 
         int translated = 0, addedKey = 0, addedText = 0;
+        List<String> scannedIds = new ArrayList<>();
         for (Map.Entry<String, Path> entry : mods.entrySet()) {
             String modId = entry.getKey();
             Path jar = entry.getValue();
+            scannedIds.add(modId);
 
             Map<String, String> zhByKey = new HashMap<>();
             // 1. 模组自带 zh_cn（最高优先级）。
@@ -120,8 +134,11 @@ public final class ModScanner {
             }
         }
 
+        scannedModIds = Set.copyOf(scannedIds);
         LOGGER.info("[自动汉化] 模组扫描完成：共 {} 个模组，{} 个有翻译，新增 {} 条翻译键 + {} 条原文匹配",
                 modCount, translated, addedKey, addedText);
+        LOGGER.info("[自动汉化] 扫描到的模组清单（{} 个）：{}", scannedIds.size(),
+                String.join(", ", new TreeSet<>(scannedIds)));
         return new ScanResult(modCount, translated, addedKey, addedText);
     }
 
@@ -177,15 +194,20 @@ public final class ModScanner {
     }
 
     /** 从 CFPA 数据读取指定模组的 zh_cn.lang / zh_cn.json（扁平 key -> value）。
-     *  数据源优先级：config/autotranslate/cfpa_mods.zip（用户可放更新的全量包） > 内置资源 */
+     *  数据源优先级：外部 CFPA 包（config/autotranslate/ 下所有 cfpa*.zip，用户可放更新的全量包） > 内置资源 */
     private static Map<String, String> readCfpaLang(String modId) {
-        // 1. 外部 CFPA 包（config/autotranslate/cfpa_mods.zip）——用户可随时更新
-        Path external = FabricLoader.getInstance().getConfigDir()
-                .resolve("autotranslate/cfpa_mods.zip");
-        if (Files.exists(external)) {
-            Map<String, String> map = readCfpaFromZip(external, modId);
-            if (map != null) {
-                return map;
+        // 1. 外部 CFPA 包（config/autotranslate/cfpa_mods.zip 及目录下任意 cfpa*.zip）——用户可随时更新
+        Path dir = FabricLoader.getInstance().getConfigDir().resolve("autotranslate");
+        if (Files.isDirectory(dir)) {
+            try (DirectoryStream<Path> ds = Files.newDirectoryStream(dir, "cfpa*.zip")) {
+                for (Path zip : ds) {
+                    Map<String, String> map = readCfpaFromZip(zip, modId);
+                    if (map != null) {
+                        return map;
+                    }
+                }
+            } catch (IOException e) {
+                LOGGER.warn("[自动汉化] 扫描外部 CFPA 包失败: {}", e.toString());
             }
         }
         // 2. 内置 CFPA 包

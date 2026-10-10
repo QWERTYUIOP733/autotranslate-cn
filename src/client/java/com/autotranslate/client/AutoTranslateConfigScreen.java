@@ -3,8 +3,10 @@ package com.autotranslate.client;
 import com.autotranslate.AutoTranslateMod;
 import com.autotranslate.Dictionary;
 import com.autotranslate.ModConfig;
+import com.autotranslate.ModScanner;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.CycleButton;
+import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
@@ -33,7 +35,7 @@ public class AutoTranslateConfigScreen extends Screen {
     @Override
     protected void init() {
         int centerX = this.width / 2;
-        int y = this.height / 2 - 70;
+        int y = this.height / 2 - 130;
 
         // 总开关：开 / 关
         CycleButton<Boolean> enabledBtn = CycleButton.<Boolean>builder(
@@ -117,6 +119,30 @@ public class AutoTranslateConfigScreen extends Screen {
         addRenderableWidget(deepBtn);
         y += SPACING;
 
+        // 导出缺失键：运行时遇到的未翻译文本记录到 missing_zh_cn.txt（便于反馈/自制翻译）
+        CycleButton<Boolean> exportBtn = CycleButton.<Boolean>builder(
+                        v -> Component.literal(v ? "开" : "关"),
+                        () -> ModConfig.isExportMissing())
+                .withValues(false, true)
+                .displayOnlyValue()
+                .create(centerX - WIDTH / 2, y, WIDTH, HEIGHT,
+                        Component.literal("导出缺失键"),
+                        (btn, val) -> {
+                            ModConfig.setExportMissing(val);
+                            ModConfig.save();
+                            AutoTranslateMod.LOGGER.info("[自动汉化] 配置界面：导出缺失键已改为 {}", val ? "开" : "关");
+                        });
+        addRenderableWidget(exportBtn);
+        y += SPACING;
+
+        // 翻译服务地址（支持分号分隔多引擎，如 本地Argos;Google 免费接口；需含 %s 参数位）
+        EditBox urlBox = new EditBox(this.font, centerX - WIDTH / 2, y, WIDTH, HEIGHT,
+                Component.literal("翻译服务地址"));
+        urlBox.setValue(ModConfig.getTranslateServiceUrl());
+        urlBox.setMaxLength(512);
+        addRenderableWidget(urlBox);
+        y += SPACING;
+
         // 重载词典（替代命令 /autotranslate reload）
         Button reloadBtn = Button.builder(Component.literal("重载词典"), ignored -> {
                     Dictionary.reload();
@@ -125,10 +151,32 @@ public class AutoTranslateConfigScreen extends Screen {
                 .bounds(centerX - WIDTH / 2, y, WIDTH, HEIGHT)
                 .build();
         addRenderableWidget(reloadBtn);
+        y += SPACING;
+
+        // 查看扫描报告：输出本次扫描到的全部模组 id 与词典规模到聊天栏
+        Button scanBtn = Button.builder(Component.literal("查看扫描报告"), ignored -> {
+                    var mods = ModScanner.getScannedModIds();
+                    String msg = "已扫描模组 " + mods.size() + " 个：" + (mods.isEmpty() ? "无" : String.join(", ", mods))
+                            + "；词典 " + Dictionary.size() + " 条（byKey + byText）";
+                    if (this.minecraft != null && this.minecraft.player != null) {
+                        this.minecraft.player.sendSystemMessage(Component.literal("[自动汉化] " + msg));
+                    }
+                    AutoTranslateMod.LOGGER.info("[自动汉化] {}", msg);
+                })
+                .bounds(centerX - WIDTH / 2, y, WIDTH, HEIGHT)
+                .build();
+        addRenderableWidget(scanBtn);
         y += SPACING + 10;
 
-        // 完成
-        Button doneBtn = Button.builder(Component.literal("完成"), ignored -> this.onClose())
+        // 完成：保存服务地址后关闭
+        Button doneBtn = Button.builder(Component.literal("完成"), ignored -> {
+                    String v = urlBox.getValue();
+                    if (v != null && !v.isBlank()) {
+                        ModConfig.setTranslateServiceUrl(v.trim());
+                        ModConfig.save();
+                    }
+                    this.onClose();
+                })
                 .bounds(centerX - WIDTH / 2, y, WIDTH, HEIGHT)
                 .build();
         addRenderableWidget(doneBtn);

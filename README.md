@@ -11,18 +11,18 @@
   - 优先使用模组自带中文（自带 zh_cn.json 时优先于 CFPA），**全命名空间扫描**——兼容 cloth-config（命名空间 cloth-config2）等一切命名空间不一致的情况，配置库自带中文自动加载
   - 自动生成英文原文匹配（byText），直接写死英文的文本也能汉化
 - 拦截原版与所有模组的 translatable 文本，按词典自动汉化
-- 内置完整翻译词典（`assets/autotranslate/lang/zh_cn_dict.json`）：byKey 8,578 条 + byText 7,655 条，覆盖 Minecraft 26.3 官方全部翻译键
-- 支持外部词典扩展：把任意 `.json` / `.lang` 词典放入 `config/autotranslate/dict/` 即自动加载（优先级最高）
+- 内置完整翻译词典（`assets/autotranslate/lang/zh_cn_dict.json` + `extra_zh_cn.json`）：byKey 约 9,300 条 + byText 约 7,700 条，覆盖 Minecraft 26.3 官方全部翻译键及常用模组术语；**英文原文大小写不敏感**命中
+- 支持外部词典扩展：把任意 `.json` / `.lang` 词典放入 `config/autotranslate/dict/`（**支持子目录分类、多 CFPA 包**）即自动加载（优先级最高）
 - **深度汉化**：渲染层拦截不走翻译系统的硬编码英文（如 Xaero 设置页 "Ignore Enforced As Editor"），三档开关：关 / 词典覆盖 / 全自动
-- **在线翻译兜底**：词典未覆盖的文本自动联网翻译（异步不卡游戏），结果缓存到本地，下次启动自动加载；支持 Google 在线 / 本地 Argos 双引擎自动识别
-- **缺失键自动导出**：未翻译文本自动记录到 `config/autotranslate/dict/missing_zh_cn.txt`（.lang 格式）与 `missing_hardcoded.txt`，改名放入词典目录即自制翻译，或反馈给开发者内置
-- **Mod Menu 配置界面**（推荐安装 Mod Menu）：模组菜单中点击「配置」可视化设置总开关、覆盖策略、翻译引擎、深度汉化、在线翻译、一键重载词典
+- **在线翻译兜底**：词典未覆盖的文本自动联网翻译（异步不卡游戏），结果缓存到本地，下次启动自动加载；**支持多引擎 failover**（服务地址分号分隔多个，逐个尝试）；结果经 **Minecraft 术语表后处理**（残留英文词规范成中文，如 Creeper→苦力怕），且**必须含中文才采用**
+- **缺失键自动导出**：未翻译文本自动记录到 `config/autotranslate/dict/missing_zh_cn.txt`（.lang 格式）与 `missing_hardcoded.txt`，**并按模组归组导出 `missing_<模组id>.txt`**；改名放入词典目录即自制翻译，或反馈给开发者内置
+- **Mod Menu 配置界面**（推荐安装 Mod Menu）：模组菜单中点击「配置」可视化设置总开关、覆盖策略、翻译引擎、深度汉化、在线翻译、导出缺失键、**翻译服务地址（多引擎）**、**查看扫描报告**、一键重载词典
 
 ## 安装
 
 1. 安装 Fabric Loader 0.19.5+（26.3 版本），并将游戏语言设为简体中文
 2. 安装 Fabric API（0.161.0+26.3 或更高，本模组依赖）
-3. 将 `autotranslate-1.5.0.jar` 放入 `mods` 文件夹
+3. 将 `autotranslate-2.4.0.jar` 放入 `mods` 文件夹
 4. 启动游戏即可生效，模组会自动扫描并汉化同文件夹的其他模组
 5. （可选）安装 Mod Menu 模组，可在游戏内「模组列表 → 自动汉化 → 配置」打开设置界面
 

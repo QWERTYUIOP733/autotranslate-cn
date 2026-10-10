@@ -39,6 +39,82 @@ public final class Dictionary {
     /** 小写归一化索引：byText 的英文原文忽略大小写也能命中（如 "iron sword" -> "Iron Sword"） */
     private static volatile Map<String, String> byTextLower = Map.of();
 
+    /** Minecraft 术语表（英文词 -> 规范中文）：在线翻译结果中残留的英文专有名词/常用词会被替换。
+     *  仅按整词边界替换译文里的英文单词，不影响中文部分。 */
+    private static final Map<String, String> TERMINOLOGY = buildTerminology();
+
+    private static Map<String, String> buildTerminology() {
+        Map<String, String> m = new HashMap<>();
+        // 生物
+        m.put("creeper", "苦力怕"); m.put("enderman", "末影人"); m.put("zombie", "僵尸");
+        m.put("skeleton", "骷髅"); m.put("spider", "蜘蛛"); m.put("slime", "史莱姆");
+        m.put("villager", "村民"); m.put("wither", "凋灵"); m.put("dragon", "龙");
+        m.put("phantom", "幻翼"); m.put("blaze", "烈焰人"); m.put("ghast", "恶魂");
+        // 矿物/材料
+        m.put("iron", "铁"); m.put("gold", "金"); m.put("diamond", "钻石"); m.put("emerald", "绿宝石");
+        m.put("redstone", "红石"); m.put("quartz", "石英"); m.put("lapis", "青金石");
+        m.put("netherite", "下界合金"); m.put("obsidian", "黑曜石"); m.put("stone", "石头");
+        m.put("wooden", "木制"); m.put("leather", "皮革"); m.put("copper", "铜"); m.put("coal", "煤");
+        // 装备/工具
+        m.put("sword", "剑"); m.put("pickaxe", "镐"); m.put("axe", "斧"); m.put("shovel", "锹");
+        m.put("hoe", "锄"); m.put("bow", "弓"); m.put("arrow", "箭"); m.put("armor", "盔甲");
+        m.put("helmet", "头盔"); m.put("chestplate", "胸甲"); m.put("leggings", "护腿"); m.put("boots", "靴子");
+        m.put("shield", "盾牌");
+        // 方块/机制
+        m.put("chest", "箱子"); m.put("furnace", "熔炉"); m.put("crafting", "合成");
+        m.put("enchantment", "附魔"); m.put("potion", "药水");
+        // 属性
+        m.put("damage", "伤害"); m.put("health", "生命"); m.put("attack", "攻击"); m.put("defense", "防御");
+        m.put("speed", "速度"); m.put("jump", "跳跃"); m.put("chance", "几率"); m.put("level", "等级");
+        m.put("modifier", "加成"); m.put("cooldown", "冷却"); m.put("duration", "持续时间");
+        m.put("range", "范围"); m.put("radius", "半径"); m.put("spawn", "生成"); m.put("respawn", "重生");
+        return m;
+    }
+
+    /** 对在线翻译结果做术语后处理：把残留的英文单词替换为规范中文（整词边界匹配）。 */
+    public static String postProcessTranslation(String zh) {
+        if (zh == null || zh.isEmpty()) {
+            return zh;
+        }
+        StringBuilder sb = new StringBuilder(zh.length() + 16);
+        int i = 0;
+        while (i < zh.length()) {
+            char c = zh.charAt(i);
+            if (isAsciiLetter(c)) {
+                int j = i;
+                while (j < zh.length() && isAsciiLetter(zh.charAt(j))) {
+                    j++;
+                }
+                String word = zh.substring(i, j).toLowerCase(Locale.ROOT);
+                String repl = TERMINOLOGY.get(word);
+                sb.append(repl != null ? repl : zh.substring(i, j));
+                i = j;
+            } else {
+                sb.append(c);
+                i++;
+            }
+        }
+        return sb.toString();
+    }
+
+    private static boolean isAsciiLetter(char c) {
+        return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+    }
+
+    /** 是否包含中文字符（用于在线翻译结果质量校验：译文应含中文才算成功） */
+    public static boolean isChinese(String s) {
+        if (s == null || s.isEmpty()) {
+            return false;
+        }
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c >= 0x4E00 && c <= 0x9FFF) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /** 在线翻译结果缓冲：翻译线程写入，定时线程批量落盘（避免翻译风暴时每次全量 IO） */
     private static final Map<String, String> PENDING_CACHE = new HashMap<>();
     private static final ScheduledExecutorService CACHE_FLUSHER = Executors.newSingleThreadScheduledExecutor(r -> {
@@ -59,14 +135,15 @@ public final class Dictionary {
         Map<String, String> newKey = new HashMap<>();
         Map<String, String> newText = new HashMap<>();
 
-        loadBuiltin(newKey, newText);
-        ModScanner.scanAndMerge(newKey, newText);
-        loadExternal(newKey, newText);
+        int builtin = loadBuiltin(newKey, newText);
+        ModScanner.ScanResult scan = ModScanner.scanAndMerge(newKey, newText);
+        int external = loadExternal(newKey, newText);
 
         byKey = Map.copyOf(newKey);
         byText = Map.copyOf(newText);
         byTextLower = buildLowerIndex(newText);
-        LOGGER.info("[自动汉化] 词典加载完成：byKey={} 条，byText={} 条", byKey.size(), byText.size());
+        LOGGER.info("[自动汉化] 词典加载完成：byKey={} 条，byText={} 条（内置 {} 条 / 模组扫描 {} 模组 +{} 键 / 外部 {} 条）",
+                byKey.size(), byText.size(), builtin, scan.modCount, scan.addedKey, external);
     }
 
     private static Map<String, String> buildLowerIndex(Map<String, String> textMap) {
@@ -75,9 +152,11 @@ public final class Dictionary {
         return Map.copyOf(lower);
     }
 
-    private static void loadBuiltin(Map<String, String> keyMap, Map<String, String> textMap) {
+    private static int loadBuiltin(Map<String, String> keyMap, Map<String, String> textMap) {
+        int before = keyMap.size() + textMap.size();
         loadJsonResource(BUILTIN_DICT, keyMap, textMap);
         loadJsonResource(EXTRA_DICT, keyMap, textMap);
+        return (keyMap.size() + textMap.size()) - before;
     }
 
     /** 从 classpath 读取扁平/结构式 JSON 词典 */
@@ -96,47 +175,67 @@ public final class Dictionary {
         }
     }
 
-    private static void loadExternal(Map<String, String> keyMap, Map<String, String> textMap) {
+    private static int loadExternal(Map<String, String> keyMap, Map<String, String> textMap) {
         Path dir = ModConfig.getExternalDictDir();
+        int added = 0;
         try {
             if (!Files.isDirectory(dir)) {
                 Files.createDirectories(dir);
-                return;
+                return 0;
             }
-            // 支持 .json（扁平/结构式）与 .lang（key=value 行）两种格式
+            // 支持 .json（扁平/结构式）与 .lang（key=value 行）两种格式；
+            // 支持一层子目录递归（便于按模组分类管理词典）
             try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir, "*.{json,lang}")) {
                 for (Path p : stream) {
-                    try {
-                        String name = p.getFileName().toString();
-                        if (name.endsWith(".lang")) {
-                            Map<String, String> flat = new HashMap<>();
-                            try (BufferedReader r = Files.newBufferedReader(p, StandardCharsets.UTF_8)) {
-                                String line;
-                                while ((line = r.readLine()) != null) {
-                                    if (line.isEmpty() || line.startsWith("#")) {
-                                        continue;
-                                    }
-                                    int eq = line.indexOf('=');
-                                    if (eq > 0) {
-                                        flat.put(line.substring(0, eq), line.substring(eq + 1));
-                                    }
-                                }
+                    added += loadExternalFile(p, keyMap, textMap);
+                }
+            }
+            try (DirectoryStream<Path> subDirs = Files.newDirectoryStream(dir)) {
+                for (Path sub : subDirs) {
+                    if (Files.isDirectory(sub)) {
+                        try (DirectoryStream<Path> subStream = Files.newDirectoryStream(sub, "*.{json,lang}")) {
+                            for (Path p : subStream) {
+                                added += loadExternalFile(p, keyMap, textMap);
                             }
-                            keyMap.putAll(flat);
-                            LOGGER.info("[自动汉化] 已加载外部词典(.lang): {}", p.getFileName());
-                        } else {
-                            JsonObject obj = JsonParser.parseString(Files.readString(p, StandardCharsets.UTF_8)).getAsJsonObject();
-                            merge(obj, keyMap, textMap);
-                            LOGGER.info("[自动汉化] 已加载外部词典: {}", p.getFileName());
                         }
-                    } catch (Exception e) {
-                        LOGGER.warn("[自动汉化] 外部词典解析失败 {}: {}", p.getFileName(), e.toString());
                     }
                 }
             }
         } catch (IOException e) {
             LOGGER.warn("[自动汉化] 外部词典目录不可用 {}: {}", dir, e.toString());
         }
+        return added;
+    }
+
+    private static int loadExternalFile(Path p, Map<String, String> keyMap, Map<String, String> textMap) {
+        int before = keyMap.size() + textMap.size();
+        try {
+            String name = p.getFileName().toString();
+            if (name.endsWith(".lang")) {
+                Map<String, String> flat = new HashMap<>();
+                try (BufferedReader r = Files.newBufferedReader(p, StandardCharsets.UTF_8)) {
+                    String line;
+                    while ((line = r.readLine()) != null) {
+                        if (line.isEmpty() || line.startsWith("#")) {
+                            continue;
+                        }
+                        int eq = line.indexOf('=');
+                        if (eq > 0) {
+                            flat.put(line.substring(0, eq), line.substring(eq + 1));
+                        }
+                    }
+                }
+                keyMap.putAll(flat);
+                LOGGER.info("[自动汉化] 已加载外部词典(.lang): {}", p);
+            } else {
+                JsonObject obj = JsonParser.parseString(Files.readString(p, StandardCharsets.UTF_8)).getAsJsonObject();
+                merge(obj, keyMap, textMap);
+                LOGGER.info("[自动汉化] 已加载外部词典: {}", p);
+            }
+        } catch (Exception e) {
+            LOGGER.warn("[自动汉化] 外部词典解析失败 {}: {}", p.getFileName(), e.toString());
+        }
+        return (keyMap.size() + textMap.size()) - before;
     }
 
     /**

@@ -27,9 +27,13 @@ public abstract class LanguageMixin {
         if (!ModConfig.isEnabled() || !ModConfig.isOverrideExisting()) {
             return;
         }
-        String zh = Dictionary.lookupKey(key);
-        if (zh != null) {
-            cir.setReturnValue(zh);
+        try {
+            String zh = Dictionary.lookupKey(key);
+            if (zh != null) {
+                cir.setReturnValue(zh);
+            }
+        } catch (Exception e) {
+            // 注入点绝不允许影响游戏：任何意外异常都放行原逻辑
         }
     }
 
@@ -39,32 +43,36 @@ public abstract class LanguageMixin {
         if (!ModConfig.isEnabled()) {
             return;
         }
-        String original = cir.getReturnValue();
-        if (original == null || original.isEmpty()) {
-            return;
-        }
-        // 补缺：原版没有这条翻译（返回的是 key 本身）
-        if (original.equals(key)) {
-            String zh = Dictionary.lookupKey(key);
-            if (zh != null) {
-                cir.setReturnValue(zh);
+        try {
+            String original = cir.getReturnValue();
+            if (original == null || original.isEmpty()) {
                 return;
             }
-            // 仍未覆盖：记录缺失键（供用户反馈/自译），并在开启在线翻译时尝试翻译
-            MissingKeysRecorder.record(key, key);
-            OnlineTranslator.request(key);
-            return;
-        }
-        // 按英文原文匹配（跳过 key 本身，避免死循环/无意义替换）
-        if (!original.equals(key)) {
-            String zh = Dictionary.lookupText(original);
-            if (zh != null) {
-                cir.setReturnValue(zh);
+            // 补缺：原版没有这条翻译（返回的是 key 本身）
+            if (original.equals(key)) {
+                String zh = Dictionary.lookupKey(key);
+                if (zh != null) {
+                    cir.setReturnValue(zh);
+                    return;
+                }
+                // 仍未覆盖：记录缺失键（供用户反馈/自译），并在开启在线翻译时尝试翻译
+                MissingKeysRecorder.record(key, key);
+                OnlineTranslator.request(key);
                 return;
             }
-            // 英文原文仍未覆盖：记录 + 在线翻译兜底
-            MissingKeysRecorder.record(key, original);
-            OnlineTranslator.request(original);
+            // 按英文原文匹配（跳过 key 本身，避免死循环/无意义替换）
+            if (!original.equals(key)) {
+                String zh = Dictionary.lookupText(original);
+                if (zh != null) {
+                    cir.setReturnValue(zh);
+                    return;
+                }
+                // 英文原文仍未覆盖：记录 + 在线翻译兜底
+                MissingKeysRecorder.record(key, original);
+                OnlineTranslator.request(original);
+            }
+        } catch (Exception e) {
+            // 注入点绝不允许影响游戏：任何意外异常都放行原逻辑
         }
     }
 }

@@ -10,6 +10,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 模组配置文件：config/autotranslate/config.json
@@ -133,6 +135,24 @@ public final class ModConfig {
         return translateServiceUrl;
     }
 
+    /** 配置界面等运行时修改入口：翻译服务地址（支持分号分隔多引擎） */
+    public static void setTranslateServiceUrl(String value) {
+        translateServiceUrl = value;
+    }
+
+    /** 翻译服务地址列表：支持分号/逗号分隔多个服务（多引擎 failover，第一个成功即用）。
+     *  每个地址模板需包含 %s 参数位。 */
+    public static List<String> getTranslateServiceUrls() {
+        List<String> urls = new ArrayList<>();
+        for (String u : translateServiceUrl.split("[;,]")) {
+            String t = u.trim();
+            if (!t.isEmpty()) {
+                urls.add(t);
+            }
+        }
+        return urls.isEmpty() ? List.of(translateServiceUrl) : urls;
+    }
+
     public static String getTranslateEngine() {
         return translateEngine;
     }
@@ -143,6 +163,11 @@ public final class ModConfig {
 
     public static boolean isExportMissing() {
         return exportMissing;
+    }
+
+    /** 配置界面等运行时修改入口 */
+    public static void setExportMissing(boolean value) {
+        exportMissing = value;
     }
 
     /** 深度汉化档位：0=关 1=词典覆盖 2=全自动 */

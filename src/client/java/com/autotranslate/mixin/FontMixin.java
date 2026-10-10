@@ -4,6 +4,7 @@ import com.autotranslate.Dictionary;
 import com.autotranslate.HardcodedTextTranslator;
 import com.autotranslate.MissingKeysRecorder;
 import com.autotranslate.ModConfig;
+import com.autotranslate.OnlineTranslator;
 import net.minecraft.client.gui.Font;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
@@ -90,9 +91,16 @@ public abstract class FontMixin {
                 return seq;
             }
         }
-        // 未命中：若像是 UI 文本则记录（供词典补全闭环），聊天/世界内容不记录
+        // 未命中：若是像 UI 文本则记录（供词典补全闭环），聊天/世界内容不记录
         if (HardcodedTextTranslator.isUiText(text)) {
             MissingKeysRecorder.recordHardcoded(text);
+            // v2.5.0：全自动档位下，未收录的 UI 文本（如配置菜单项）异步交给本地 AI 翻译，
+            // 翻译结果回填词典后，同一文本下一次渲染即显示中文。
+            // 聊天/世界内容经 isUiText 过滤（含 § 颜色码/超长句/含中文）不会被发送。
+            if (ModConfig.isDeepTranslateAuto() && ModConfig.isOnlineTranslate()
+                    && OnlineTranslator.isTranslatable(text)) {
+                OnlineTranslator.request(text);
+            }
         }
         return seq;
     }

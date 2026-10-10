@@ -154,4 +154,50 @@ public final class Dictionary {
     public static int size() {
         return byKey.size() + byText.size();
     }
+
+    /**
+     * 运行时新增一条 byText 翻译（英文原文 -> 中文）。
+     * 供在线翻译兜底使用：合并进内存词典，并追加持久化到 cache.json，
+     * 使下次启动（外部词典加载阶段）自动生效。
+     */
+    public static synchronized void addTextEntry(String englishText, String zh) {
+        if (englishText == null || zh == null || englishText.isEmpty()) {
+            return;
+        }
+        Map<String, String> newText = new HashMap<>(byText);
+        if (zh.equals(newText.get(englishText))) {
+            return; // 已有相同译文
+        }
+        newText.put(englishText, zh);
+        byText = Map.copyOf(newText);
+        appendCache(englishText, zh);
+    }
+
+    /** 追加在线翻译结果到 cache.json（结构式 {"byText": {...}}，自动并入外部词典加载） */
+    private static void appendCache(String englishText, String zh) {
+        try {
+            Path dir = ModConfig.getExternalDictDir();
+            Files.createDirectories(dir);
+            Path file = dir.resolve("cache.json");
+            Map<String, String> map = new HashMap<>();
+            if (Files.exists(file)) {
+                try {
+                    JsonObject obj = JsonParser.parseString(Files.readString(file, StandardCharsets.UTF_8)).getAsJsonObject();
+                    if (obj.has("byText") && obj.get("byText").isJsonObject()) {
+                        mergeInto(map, obj.getAsJsonObject("byText"));
+                    }
+                } catch (Exception ignored) {
+                    // 缓存文件损坏时重建
+                }
+            }
+            map.put(englishText, zh);
+            JsonObject out = new JsonObject();
+            JsonObject byTextObj = new JsonObject();
+            map.forEach(byTextObj::addProperty);
+            out.add("byText", byTextObj);
+            Files.writeString(file, out.toString(), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            LOGGER.warn("[自动汉化] 写入在线翻译缓存失败: {}", e.toString());
+        }
+    }
 }

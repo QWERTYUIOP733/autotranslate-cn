@@ -1,5 +1,16 @@
 # 自动汉化模组 更新日志
 
+## v1.4.0 (2026-10-10)
+
+### ✨ 功能
+- **在线翻译兜底**：配置界面新增「在线翻译」开关。词典未覆盖的英文文本会自动联网翻译（异步、不卡游戏），结果立即生效并缓存到 `config/autotranslate/dict/cache.json`，下次启动自动加载
+- **缺失键自动导出**：运行时遇到的未翻译文本自动记录到 `config/autotranslate/dict/missing_zh_cn.txt`（格式与 .lang 一致），改名放入词典目录即可自制翻译，或反馈给开发者内置补全
+- **外部 CFPA 包覆盖**：`config/autotranslate/cfpa_mods.zip` 优先于内置 CFPA 数据——放入更新的 CFPA 全量包即可随时刷新数据源，无需重装模组
+
+### 🔧 技术更新
+- 新增 OnlineTranslator（异步翻译 + 限流 + 去重 + 失败静默降级）、MissingKeysRecorder（定时导出）
+- 翻译服务地址可配置（config.json 的 translateServiceUrl，默认 Google 免费接口）
+
 ## v1.3.2 (2026-10-10)
 
 ### ✨ 功能

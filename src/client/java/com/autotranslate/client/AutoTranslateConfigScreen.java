@@ -67,6 +67,22 @@ public class AutoTranslateConfigScreen extends Screen {
         addRenderableWidget(overrideBtn);
         y += SPACING;
 
+        // 在线翻译兜底：词典未覆盖的英文文本自动联网翻译（可配置服务地址）
+        CycleButton<Boolean> onlineBtn = CycleButton.<Boolean>builder(
+                        v -> Component.literal(v ? "开" : "关"),
+                        () -> ModConfig.isOnlineTranslate())
+                .withValues(false, true)
+                .displayOnlyValue()
+                .create(centerX - WIDTH / 2, y, WIDTH, HEIGHT,
+                        Component.literal("在线翻译"),
+                        (btn, val) -> {
+                            ModConfig.setOnlineTranslate(val);
+                            ModConfig.save();
+                            AutoTranslateMod.LOGGER.info("[自动汉化] 配置界面：在线翻译已改为 {}", val ? "开" : "关");
+                        });
+        addRenderableWidget(onlineBtn);
+        y += SPACING;
+
         // 重载词典（替代命令 /autotranslate reload）
         Button reloadBtn = Button.builder(Component.literal("重载词典"), ignored -> {
                     Dictionary.reload();

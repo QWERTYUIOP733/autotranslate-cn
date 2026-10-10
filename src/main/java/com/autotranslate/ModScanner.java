@@ -165,29 +165,67 @@ public final class ModScanner {
         }
     }
 
-    /** 从内置 CFPA zip 读取指定模组的 zh_cn.lang / zh_cn.json（扁平 key -> value） */
+    /** 从 CFPA 数据读取指定模组的 zh_cn.lang / zh_cn.json（扁平 key -> value）。
+     *  数据源优先级：config/autotranslate/cfpa_mods.zip（用户可放更新的全量包） > 内置资源 */
     private static Map<String, String> readCfpaLang(String modId) {
+        // 1. 外部 CFPA 包（config/autotranslate/cfpa_mods.zip）——用户可随时更新
+        Path external = FabricLoader.getInstance().getConfigDir()
+                .resolve("autotranslate/cfpa_mods.zip");
+        if (Files.exists(external)) {
+            Map<String, String> map = readCfpaFromZip(external, modId);
+            if (map != null) {
+                return map;
+            }
+        }
+        // 2. 内置 CFPA 包
         try (InputStream in = ModScanner.class.getResourceAsStream(CFPA_ZIP_RESOURCE)) {
             if (in == null) {
                 LOGGER.warn("[自动汉化] 内置 CFPA 翻译数据缺失: {}", CFPA_ZIP_RESOURCE);
                 return null;
             }
-            String langPath = "assets/" + modId + "/lang/zh_cn.lang";
-            String jsonPath = "assets/" + modId + "/lang/zh_cn.json";
-            try (ZipInputStream zis = new ZipInputStream(in)) {
-                ZipEntry ze;
-                while ((ze = zis.getNextEntry()) != null) {
-                    String name = ze.getName();
-                    if (name.equals(langPath)) {
-                        return parseLang(zis);
-                    }
-                    if (name.equals(jsonPath)) {
-                        return parseJsonLang(zis);
-                    }
+            return readCfpaFromStream(in, modId);
+        } catch (Exception e) {
+            LOGGER.warn("[自动汉化] 读取 CFPA 翻译失败 {}: {}", modId, e.toString());
+        }
+        return null;
+    }
+
+    /** 从 CFPA zip 路径读取指定模组翻译 */
+    private static Map<String, String> readCfpaFromZip(Path zipPath, String modId) {
+        try (ZipFile zf = new ZipFile(zipPath.toFile())) {
+            ZipEntry lang = zf.getEntry("assets/" + modId + "/lang/zh_cn.lang");
+            ZipEntry json = zf.getEntry("assets/" + modId + "/lang/zh_cn.json");
+            if (lang != null) {
+                try (InputStream in = zf.getInputStream(lang)) {
+                    return parseLang(in);
+                }
+            }
+            if (json != null) {
+                try (InputStream in = zf.getInputStream(json)) {
+                    return parseJsonLang(in);
                 }
             }
         } catch (Exception e) {
-            LOGGER.warn("[自动汉化] 读取 CFPA 翻译失败 {}: {}", modId, e.toString());
+            LOGGER.warn("[自动汉化] 外部 CFPA 包读取失败 {}: {}", zipPath, e.toString());
+        }
+        return null;
+    }
+
+    /** 从内置 CFPA 资源流读取指定模组翻译 */
+    private static Map<String, String> readCfpaFromStream(InputStream in, String modId) throws IOException {
+        String langPath = "assets/" + modId + "/lang/zh_cn.lang";
+        String jsonPath = "assets/" + modId + "/lang/zh_cn.json";
+        try (ZipInputStream zis = new ZipInputStream(in)) {
+            ZipEntry ze;
+            while ((ze = zis.getNextEntry()) != null) {
+                String name = ze.getName();
+                if (name.equals(langPath)) {
+                    return parseLang(zis);
+                }
+                if (name.equals(jsonPath)) {
+                    return parseJsonLang(zis);
+                }
+            }
         }
         return null;
     }

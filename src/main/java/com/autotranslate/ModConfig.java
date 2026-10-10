@@ -24,6 +24,13 @@ public final class ModConfig {
     private static boolean overrideExisting = false;
     /** 外部词典目录（相对 config 目录） */
     private static String externalDictDir = DEFAULT_EXTERNAL_DIR;
+    /** 在线翻译兜底：词典未覆盖的英文文本自动联网翻译（异步，结果缓存到本地词典） */
+    private static boolean onlineTranslate = false;
+    /** 在线翻译服务地址（URL 模板：%s 会被替换为 URL 编码后的英文文本） */
+    private static String translateServiceUrl =
+            "https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=zh-CN&dt=t&q=%s";
+    /** 导出未覆盖翻译键：把运行时遇到的未翻译文本记录到 missing_zh_cn.txt，便于用户反馈/自译 */
+    private static boolean exportMissing = true;
 
     private ModConfig() {
     }
@@ -42,12 +49,23 @@ public final class ModConfig {
                 if (obj.has("externalDictDir")) {
                     externalDictDir = obj.get("externalDictDir").getAsString();
                 }
+                if (obj.has("onlineTranslate")) {
+                    onlineTranslate = obj.get("onlineTranslate").getAsBoolean();
+                }
+                if (obj.has("translateServiceUrl")) {
+                    translateServiceUrl = obj.get("translateServiceUrl").getAsString();
+                }
+                if (obj.has("exportMissing")) {
+                    exportMissing = obj.get("exportMissing").getAsBoolean();
+                }
             }
         } catch (Exception e) {
             LOGGER.warn("[自动汉化] 读取配置文件失败，使用默认配置: {}", e.toString());
             enabled = true;
             overrideExisting = false;
             externalDictDir = DEFAULT_EXTERNAL_DIR;
+            onlineTranslate = false;
+            exportMissing = true;
         }
         save();
     }
@@ -62,6 +80,9 @@ public final class ModConfig {
             obj.addProperty("enabled", enabled);
             obj.addProperty("overrideExisting", overrideExisting);
             obj.addProperty("externalDictDir", externalDictDir);
+            obj.addProperty("onlineTranslate", onlineTranslate);
+            obj.addProperty("translateServiceUrl", translateServiceUrl);
+            obj.addProperty("exportMissing", exportMissing);
             Files.writeString(file, obj.toString(), StandardCharsets.UTF_8);
         } catch (IOException e) {
             LOGGER.warn("[自动汉化] 写入配置文件失败: {}", e.toString());
@@ -86,6 +107,22 @@ public final class ModConfig {
         overrideExisting = value;
     }
 
+    public static boolean isOnlineTranslate() {
+        return onlineTranslate;
+    }
+
+    public static void setOnlineTranslate(boolean value) {
+        onlineTranslate = value;
+    }
+
+    public static String getTranslateServiceUrl() {
+        return translateServiceUrl;
+    }
+
+    public static boolean isExportMissing() {
+        return exportMissing;
+    }
+
     /** 外部词典目录（绝对路径） */
     public static Path getExternalDictDir() {
         return FabricLoader.getInstance().getConfigDir().resolve(externalDictDir);
@@ -98,6 +135,8 @@ public final class ModConfig {
     public static String statusText() {
         return "总开关=" + (enabled ? "开" : "关")
                 + "，覆盖策略=" + (overrideExisting ? "词典优先" : "仅补缺")
+                + "，在线翻译=" + (onlineTranslate ? "开" : "关")
+                + "，导出缺失键=" + (exportMissing ? "开" : "关")
                 + "，外部词典目录=" + externalDictDir;
     }
 }

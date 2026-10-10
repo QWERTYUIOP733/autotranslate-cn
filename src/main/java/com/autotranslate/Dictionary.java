@@ -269,7 +269,9 @@ public final class Dictionary {
         return key == null ? null : byKey.get(key);
     }
 
-    /** 按英文原文查中文；未命中返回 null。先精确匹配，再小写归一化匹配。 */
+    /** 按英文原文查中文；未命中返回 null。
+     *  先精确匹配，再小写归一化匹配，最后剥离尾部省略号"..."后再试一次
+     *  （GUI 列表项被截断渲染时文本为 "Aquatic Lasso..."，词典存 "Aquatic Lasso"）。 */
     public static String lookupText(String text) {
         if (text == null) {
             return null;
@@ -277,6 +279,13 @@ public final class Dictionary {
         String zh = byText.get(text);
         if (zh == null) {
             zh = byTextLower.get(text.toLowerCase(Locale.ROOT));
+        }
+        if (zh == null && text.endsWith("...")) {
+            String core = text.substring(0, text.length() - 3);
+            zh = byText.get(core);
+            if (zh == null) {
+                zh = byTextLower.get(core.toLowerCase(Locale.ROOT));
+            }
         }
         return zh;
     }

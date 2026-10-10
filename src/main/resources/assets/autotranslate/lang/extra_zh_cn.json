@@ -823,6 +823,14 @@
   "Yes this is some beautiful tooltip": "是的，这是一段漂亮的提示文字",
   "Oh and this is the second line!": "哦，这是第二行！",
   "I only work when numbers are extreme!": "仅当数值达到极端时生效！",
-  "Something's not quite right...": "有些地方不太对劲…"
+  "Something's not quite right...": "有些地方不太对劲…",
+  "Mob Lassos Settings > Golden Lasso": "生物套索设置 > 黄金套索",
+  "Mob Lassos Settings > Aqua Lasso": "生物套索设置 > 水生套索",
+  "Mob Lassos Settings > Diamond Lasso": "生物套索设置 > 钻石套索",
+  "Mob Lassos Settings > Hostile Lasso": "生物套索设置 > 敌对生物套索",
+  "Mob Lassos Settings > Emerald Lasso": "生物套索设置 > 绿宝石套索",
+  "Mob Lassos Settings > Creative Lasso": "生物套索设置 > 创造套索",
+  "increase a lasso's holding time": "延长套索的束缚时间",
+  "Is the lasso able to hold mobs": "套索是否能够束缚生物"
  }
 }

@@ -31,6 +31,8 @@ public final class ModConfig {
             "https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=zh-CN&dt=t&q=%s";
     /** 导出未覆盖翻译键：把运行时遇到的未翻译文本记录到 missing_zh_cn.txt，便于用户反馈/自译 */
     private static boolean exportMissing = true;
+    /** 深度汉化（渲染层拦截硬编码文本）：0=关 1=词典覆盖（只翻已收录） 2=全自动（未收录短文本也联网翻译） */
+    private static int deepTranslate = 0;
 
     private ModConfig() {
     }
@@ -58,6 +60,9 @@ public final class ModConfig {
                 if (obj.has("exportMissing")) {
                     exportMissing = obj.get("exportMissing").getAsBoolean();
                 }
+                if (obj.has("deepTranslate")) {
+                    deepTranslate = obj.get("deepTranslate").getAsInt();
+                }
             }
         } catch (Exception e) {
             LOGGER.warn("[自动汉化] 读取配置文件失败，使用默认配置: {}", e.toString());
@@ -66,6 +71,7 @@ public final class ModConfig {
             externalDictDir = DEFAULT_EXTERNAL_DIR;
             onlineTranslate = false;
             exportMissing = true;
+            deepTranslate = 0;
         }
         save();
     }
@@ -83,6 +89,7 @@ public final class ModConfig {
             obj.addProperty("onlineTranslate", onlineTranslate);
             obj.addProperty("translateServiceUrl", translateServiceUrl);
             obj.addProperty("exportMissing", exportMissing);
+            obj.addProperty("deepTranslate", deepTranslate);
             Files.writeString(file, obj.toString(), StandardCharsets.UTF_8);
         } catch (IOException e) {
             LOGGER.warn("[自动汉化] 写入配置文件失败: {}", e.toString());
@@ -123,6 +130,25 @@ public final class ModConfig {
         return exportMissing;
     }
 
+    /** 深度汉化档位：0=关 1=词典覆盖 2=全自动 */
+    public static int getDeepTranslate() {
+        return deepTranslate;
+    }
+
+    public static void setDeepTranslate(int value) {
+        deepTranslate = value;
+    }
+
+    /** 深度汉化是否开启 */
+    public static boolean isDeepTranslateOn() {
+        return deepTranslate > 0;
+    }
+
+    /** 深度汉化是否全自动（未收录的短英文文本也联网翻译） */
+    public static boolean isDeepTranslateAuto() {
+        return deepTranslate >= 2;
+    }
+
     /** 外部词典目录（绝对路径） */
     public static Path getExternalDictDir() {
         return FabricLoader.getInstance().getConfigDir().resolve(externalDictDir);
@@ -136,6 +162,7 @@ public final class ModConfig {
         return "总开关=" + (enabled ? "开" : "关")
                 + "，覆盖策略=" + (overrideExisting ? "词典优先" : "仅补缺")
                 + "，在线翻译=" + (onlineTranslate ? "开" : "关")
+                + "，深度汉化=" + (deepTranslate == 0 ? "关" : deepTranslate == 1 ? "词典覆盖" : "全自动")
                 + "，导出缺失键=" + (exportMissing ? "开" : "关")
                 + "，外部词典目录=" + externalDictDir;
     }

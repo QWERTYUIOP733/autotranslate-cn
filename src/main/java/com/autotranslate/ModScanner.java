@@ -86,8 +86,10 @@ public final class ModScanner {
             Path jar = entry.getValue();
 
             Map<String, String> zhByKey = new HashMap<>();
-            // 1. 模组自带 zh_cn.json（最高优先级）
-            Map<String, String> selfZh = readModLangJson(jar, modId, "zh_cn.json");
+            // 1. 模组自带 zh_cn（最高优先级）。
+            //    扫描 jar 内所有资源命名空间 assets/*/lang/zh_cn.* —— 兼容 modid 与资源命名空间
+            //    不一致的模组（如 cloth-config 的命名空间是 cloth-config2）、嵌套库等一切情况。
+            Map<String, String> selfZh = readModAllLangJson(jar, "zh_cn.json");
             if (selfZh != null) {
                 zhByKey.putAll(selfZh);
             }
@@ -105,7 +107,8 @@ public final class ModScanner {
                     }
                 }
                 // 3. byText：en_us.json 与中文按翻译键配对 → 英文原文匹配
-                Map<String, String> enUs = readModLangJson(jar, modId, "en_us.json");
+                //    （同样按所有命名空间扫描，保证与 zh 的命名空间对应）
+                Map<String, String> enUs = readModAllLangJson(jar, "en_us.json");
                 if (enUs != null) {
                     for (Map.Entry<String, String> en : enUs.entrySet()) {
                         String zh = zhByKey.get(en.getKey());
@@ -142,27 +145,35 @@ public final class ModScanner {
         return null;
     }
 
-    /** 读模组 jar 内 assets/&lt;modId&gt;/lang/&lt;file&gt;.json（扁平 key -> value） */
-    private static Map<String, String> readModLangJson(Path jar, String modId, String file) {
+    /** 扫描 jar 内所有资源命名空间的指定语言文件并合并（assets/&lt;任意&gt;/lang/&lt;file&gt;）。
+     *  解决 modid 与资源命名空间不一致（如 cloth-config 的命名空间为 cloth-config2）、
+     *  jar 内含多个命名空间（模组 + 内置库）等情况。 */
+    private static Map<String, String> readModAllLangJson(Path jar, String file) {
+        Map<String, String> merged = new HashMap<>();
         try (ZipFile zf = new ZipFile(jar.toFile())) {
-            ZipEntry e = zf.getEntry("assets/" + modId + "/lang/" + file);
-            if (e == null) {
-                return null;
-            }
-            try (BufferedReader r = new BufferedReader(
-                    new InputStreamReader(zf.getInputStream(e), StandardCharsets.UTF_8))) {
-                JsonObject obj = JsonParser.parseReader(r).getAsJsonObject();
-                Map<String, String> map = new HashMap<>();
-                obj.entrySet().forEach(en -> {
-                    if (en.getValue().isJsonPrimitive()) {
-                        map.put(en.getKey(), en.getValue().getAsString());
-                    }
-                });
-                return map;
+            var entries = zf.entries();
+            while (entries.hasMoreElements()) {
+                ZipEntry e = entries.nextElement();
+                String name = e.getName();
+                if (!name.startsWith("assets/") || !name.endsWith("/lang/" + file) || e.isDirectory()) {
+                    continue;
+                }
+                try (BufferedReader r = new BufferedReader(
+                        new InputStreamReader(zf.getInputStream(e), StandardCharsets.UTF_8))) {
+                    JsonObject obj = JsonParser.parseReader(r).getAsJsonObject();
+                    obj.entrySet().forEach(en -> {
+                        if (en.getValue().isJsonPrimitive()) {
+                            merged.put(en.getKey(), en.getValue().getAsString());
+                        }
+                    });
+                } catch (Exception ignore) {
+                    // 单个语言文件损坏时跳过，继续读其他命名空间
+                }
             }
         } catch (Exception ex) {
             return null;
         }
+        return merged.isEmpty() ? null : merged;
     }
 
     /** 从 CFPA 数据读取指定模组的 zh_cn.lang / zh_cn.json（扁平 key -> value）。

@@ -83,6 +83,23 @@ public class AutoTranslateConfigScreen extends Screen {
         addRenderableWidget(onlineBtn);
         y += SPACING;
 
+        // 深度汉化：渲染层拦截硬编码英文文本（不走翻译系统的），三档
+        CycleButton<Integer> deepBtn = CycleButton.<Integer>builder(
+                        v -> Component.literal(v == 0 ? "关" : v == 1 ? "词典覆盖" : "全自动"),
+                        () -> ModConfig.getDeepTranslate())
+                .withValues(0, 1, 2)
+                .displayOnlyValue()
+                .create(centerX - WIDTH / 2, y, WIDTH, HEIGHT,
+                        Component.literal("深度汉化"),
+                        (btn, val) -> {
+                            ModConfig.setDeepTranslate(val);
+                            ModConfig.save();
+                            AutoTranslateMod.LOGGER.info("[自动汉化] 配置界面：深度汉化已改为 {}",
+                                    val == 0 ? "关" : val == 1 ? "词典覆盖" : "全自动");
+                        });
+        addRenderableWidget(deepBtn);
+        y += SPACING;
+
         // 重载词典（替代命令 /autotranslate reload）
         Button reloadBtn = Button.builder(Component.literal("重载词典"), ignored -> {
                     Dictionary.reload();

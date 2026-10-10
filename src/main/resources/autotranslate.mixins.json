@@ -4,6 +4,9 @@
   "mixins": [
     "LanguageMixin"
   ],
+  "client": [
+    "FontMixin"
+  ],
   "injectors": {
     "defaultRequire": 1
   }

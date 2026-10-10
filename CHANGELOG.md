@@ -1,5 +1,19 @@
 # 自动汉化模组 更新日志
 
+## v1.4.1 (2026-10-10)
+
+### ✨ 功能
+- **深度汉化（渲染层拦截）**：补上最后一块死角——不走翻译系统的硬编码英文文本（如 Xaero 设置里的 "Ignore Enforced As Editor"）也会被翻译。配置界面新增三档：关 / 词典覆盖（只翻已收录，零风险）/ 全自动（未收录短文本也联网翻译）
+- **ModScanner 全面适配**：改为扫描模组 jar 内**所有资源命名空间**的翻译文件并合并——兼容 modid 与命名空间不一致的模组（如 cloth-config 的命名空间是 cloth-config2）、嵌套库等一切情况，配置库（Cloth Config 等）自带中文也会自动加载
+- 硬编码文本单独导出 `missing_hardcoded.txt`，反馈给开发者即可永久内置
+
+### 🔧 技术更新
+- 新增 FontMixin（客户端 Mixin，注入 Font#prepareText(String) 渲染入口，聊天/玩家名走 FormattedCharSequence 不受影响）、HardcodedTextTranslator（UI 文本特征过滤 + 词典命中 + 档位控制）
+- 翻译覆盖链完整闭环：翻译键 → 英文原文 → **渲染层硬编码文本** → 在线翻译兜底
+
+### 📦 安装要求
+- Minecraft 26.3（Java 25）、Fabric Loader 0.19.5+、Fabric API 0.161.0+26.3
+
 ## v1.4.0 (2026-10-10)
 
 ### ✨ 功能

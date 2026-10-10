@@ -15,6 +15,9 @@
     ],
     "client": [
       "com.autotranslate.client.AutoTranslateModClient"
+    ],
+    "modmenu": [
+      "com.autotranslate.client.ModMenuIntegration"
     ]
   },
   "mixins": [

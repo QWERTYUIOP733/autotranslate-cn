@@ -8,7 +8,8 @@
 - 拦截原版与所有模组的 translatable 文本，按词典自动汉化
 - 内置完整翻译词典（`assets/autotranslate/lang/zh_cn_dict.json`）：byKey 8,578 条 + byText 7,655 条，覆盖 Minecraft 26.3 官方全部翻译键
 - 支持外部词典扩展：把任意 `.json` 词典放入 `config/autotranslate/dict/` 即自动加载
-- 词典热重载：游戏内执行 `/autotranslate reload`
+- **Mod Menu 配置界面**（推荐安装 Mod Menu）：模组菜单中点击「配置」可视化设置总开关、覆盖策略、一键重载词典
+- 词典热重载：配置界面一键重载，或游戏内执行 `/autotranslate reload`
 - 状态查看：`/autotranslate status`
 - 可配置：总开关、覆盖策略（词典优先 / 仅补缺）、外部词典目录
 
@@ -16,8 +17,11 @@
 
 1. 安装 Fabric Loader 0.19.5+（26.3 版本），并将游戏语言设为简体中文
 2. 安装 Fabric API（0.161.0+26.3 或更高，本模组依赖）
-3. 将 `autotranslate-1.1.0.jar` 放入 `mods` 文件夹
+3. 将 `autotranslate-1.2.0.jar` 放入 `mods` 文件夹
 4. 启动游戏即可生效
+5. （可选）安装 Mod Menu 模组，可在游戏内「模组列表 → 自动汉化 → 配置」打开设置界面
+
+> 未安装 Mod Menu 时不影响汉化功能，开关与策略仍可通过 `/autotranslate` 命令与 `config/autotranslate/config.json` 调整。
 
 ## 外部词典格式
 
@@ -42,7 +46,7 @@
 
 ## 配置文件
 
-`config/autotranslate/config.json`：
+`config/autotranslate/config.json`（也可在游戏内 Mod Menu 配置界面修改，效果相同）：
 
 | 字段 | 默认 | 说明 |
 |---|---|---|
@@ -55,7 +59,7 @@
 ```bash
 # 一键构建（自动设置 JDK 25 与 Gradle 缓存，产物在 D 盘）
 build.bat
-# 产物：build/libs/autotranslate-1.1.0.jar
+# 产物：build/libs/autotranslate-1.2.0.jar
 ```
 
 ## 技术要点

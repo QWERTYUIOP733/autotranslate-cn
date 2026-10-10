@@ -37,6 +37,9 @@ dependencies {
 
     // Fabric API
     implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+
+    // Mod Menu（仅编译期依赖，运行时可选：装了 Mod Menu 才有配置界面，不装不影响功能）
+    compileOnly files("libs/modmenu-21.0.0.jar")
 }
 
 processResources {

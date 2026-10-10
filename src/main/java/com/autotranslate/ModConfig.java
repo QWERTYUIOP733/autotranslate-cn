@@ -76,6 +76,16 @@ public final class ModConfig {
         return overrideExisting;
     }
 
+    /** 供配置界面等运行时修改入口使用 */
+    public static void setEnabled(boolean value) {
+        enabled = value;
+    }
+
+    /** 供配置界面等运行时修改入口使用 */
+    public static void setOverrideExisting(boolean value) {
+        overrideExisting = value;
+    }
+
     /** 外部词典目录（绝对路径） */
     public static Path getExternalDictDir() {
         return FabricLoader.getInstance().getConfigDir().resolve(externalDictDir);

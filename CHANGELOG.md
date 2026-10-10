@@ -1,5 +1,22 @@
 # 自动汉化模组 更新日志
 
+## v1.2.0 (2026-10-10)
+
+### ✨ 功能
+- **Mod Menu 配置界面**：模组菜单中点击「配置」即可可视化设置，无需再改命令行或配置文件
+  - 总开关（开 / 关）
+  - 覆盖策略（仅补缺 / 词典优先）
+  - 一键重载词典（替代 `/autotranslate reload`）
+  - 修改即时保存到 `config/autotranslate/config.json`，下次启动仍生效
+- 使用原版 GUI 控件实现，**不依赖 Cloth Config 等额外配置库**
+
+### 🔧 技术更新
+- 新增 Mod Menu 集成入口（compileOnly 依赖，未装 Mod Menu 不影响功能，命令 `/autotranslate reload|status` 仍保留可用）
+- 适配 Minecraft 26.3 GUI 重构（`Minecraft.setScreenAndShow`、`CycleButton.Builder` 等新 API）
+
+### 📦 安装要求
+- 可选安装 Mod Menu 以使用配置界面（推荐）；不装则继续使用命令/配置文件
+
 ## v1.1.0 (2026-10-10)
 
 ### ✨ 功能

@@ -1,5 +1,18 @@
 # 自动汉化模组 更新日志
 
+## v2.4.1 (2026-10-10)
+
+### ✨ 实测补全（Cloth 测试屏 / MobLassos / mymod / ElementalSwords / Phoenix / JEI）
+- **Cloth Config 测试配置屏**：A list of Longs/Strings、A color field、An alpha color field、Suggestion/Selection Random Int、Cool Key、Modifier Key、OKAY/BAD/HORRIBLE/EXCELLENT/GOOD 等 32 条硬编码文本补入 byText
+- **MobLassos**：World Configurations（世界配置）补入 byText（配置文件名 moblassos-server.toml 保持原名不翻）
+- **mymod（咖啡模组）**：Coffee Button / Coffee Sapling / Coffee Beans / Cup 等 8 条物品方块键补入 byKey
+- **ElementalSwords**：Fire/Water/Air Sword（火焰剑/流水剑/疾风剑）+ tooltip.hold_shift（保留 § 格式码）+ Fire Sword 工具提示
+- **Phoenix**：container.phoenix.phoenix_slot_machine（凤凰老虎机）补入 byKey
+- **JEI 服务器权限**：jei.config.server.permissions.* 8 条权限配置键补入 byKey
+
+### 🔧 技术更新
+- **修复已翻译文本误记录**：MissingKeysRecorder 跳过已是中文的键值（此前 fabric.gui.creativeTabPage 等原版中文键被误记入缺失清单）
+
 ## v2.4.0 (2026-10-10)
 
 ### 🎯 10 代迭代收官（v1.6.0 → v2.4.0）

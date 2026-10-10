@@ -39,10 +39,14 @@ public final class MissingKeysRecorder {
     private MissingKeysRecorder() {
     }
 
-    /** 记录一条未覆盖文本。key 为空时用英文原文本身作为标识。 */
+    /** 记录一条未覆盖文本。key 为空时用英文原文本身作为标识。
+     *  已是中文的文本（如其他模组已翻译的键值）不记录。 */
     public static synchronized void record(String key, String englishText) {
         if (!ModConfig.isExportMissing() || MISSING.size() >= MAX_RECORDS) {
             return;
+        }
+        if (englishText != null && Dictionary.isChinese(englishText)) {
+            return; // 已是中文，无需记录
         }
         String id = (key != null && !key.isEmpty()) ? key : englishText;
         String existing = MISSING.get(id);

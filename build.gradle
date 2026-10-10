@@ -65,6 +65,9 @@ jar {
     from("LICENSE") {
         rename { "${it}_${project.base.archivesName.get()}" }
     }
+    from("LICENSE_CFPA") {
+        rename { "LICENSE_CFPA" }
+    }
 }
 
 // configure the maven publication

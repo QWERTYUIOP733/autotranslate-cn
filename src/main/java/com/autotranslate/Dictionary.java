@@ -35,12 +35,13 @@ public final class Dictionary {
     private Dictionary() {
     }
 
-    /** 加载内置 + 外部词典（幂等，可随时重载） */
+    /** 加载内置 + 模组扫描 + 外部词典（幂等，可随时重载） */
     public static synchronized void reload() {
         Map<String, String> newKey = new HashMap<>();
         Map<String, String> newText = new HashMap<>();
 
         loadBuiltin(newKey, newText);
+        ModScanner.scanAndMerge(newKey, newText);
         loadExternal(newKey, newText);
 
         byKey = Map.copyOf(newKey);

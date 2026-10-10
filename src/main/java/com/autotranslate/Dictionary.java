@@ -28,6 +28,7 @@ import java.util.Map;
 public final class Dictionary {
     private static final Logger LOGGER = LoggerFactory.getLogger(AutoTranslateMod.MOD_ID);
     private static final String BUILTIN_DICT = "/assets/autotranslate/lang/zh_cn_dict.json";
+    private static final String EXTRA_DICT = "/assets/autotranslate/lang/extra_zh_cn.json";
 
     private static volatile Map<String, String> byKey = Map.of();
     private static volatile Map<String, String> byText = Map.of();
@@ -50,9 +51,15 @@ public final class Dictionary {
     }
 
     private static void loadBuiltin(Map<String, String> keyMap, Map<String, String> textMap) {
-        try (InputStream in = Dictionary.class.getResourceAsStream(BUILTIN_DICT)) {
+        loadJsonResource(BUILTIN_DICT, keyMap, textMap);
+        loadJsonResource(EXTRA_DICT, keyMap, textMap);
+    }
+
+    /** 从 classpath 读取扁平/结构式 JSON 词典 */
+    private static void loadJsonResource(String resource, Map<String, String> keyMap, Map<String, String> textMap) {
+        try (InputStream in = Dictionary.class.getResourceAsStream(resource)) {
             if (in == null) {
-                LOGGER.warn("[自动汉化] 内置词典缺失: {}", BUILTIN_DICT);
+                LOGGER.warn("[自动汉化] 内置词典缺失: {}", resource);
                 return;
             }
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
@@ -60,7 +67,7 @@ public final class Dictionary {
                 merge(obj, keyMap, textMap);
             }
         } catch (Exception e) {
-            LOGGER.warn("[自动汉化] 内置词典解析失败: {}", e.toString());
+            LOGGER.warn("[自动汉化] 内置词典解析失败 {}: {}", resource, e.toString());
         }
     }
 
@@ -71,12 +78,32 @@ public final class Dictionary {
                 Files.createDirectories(dir);
                 return;
             }
-            try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir, "*.json")) {
+            // 支持 .json（扁平/结构式）与 .lang（key=value 行）两种格式
+            try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir, "*.{json,lang}")) {
                 for (Path p : stream) {
                     try {
-                        JsonObject obj = JsonParser.parseString(Files.readString(p, StandardCharsets.UTF_8)).getAsJsonObject();
-                        merge(obj, keyMap, textMap);
-                        LOGGER.info("[自动汉化] 已加载外部词典: {}", p.getFileName());
+                        String name = p.getFileName().toString();
+                        if (name.endsWith(".lang")) {
+                            Map<String, String> flat = new HashMap<>();
+                            try (BufferedReader r = Files.newBufferedReader(p, StandardCharsets.UTF_8)) {
+                                String line;
+                                while ((line = r.readLine()) != null) {
+                                    if (line.isEmpty() || line.startsWith("#")) {
+                                        continue;
+                                    }
+                                    int eq = line.indexOf('=');
+                                    if (eq > 0) {
+                                        flat.put(line.substring(0, eq), line.substring(eq + 1));
+                                    }
+                                }
+                            }
+                            keyMap.putAll(flat);
+                            LOGGER.info("[自动汉化] 已加载外部词典(.lang): {}", p.getFileName());
+                        } else {
+                            JsonObject obj = JsonParser.parseString(Files.readString(p, StandardCharsets.UTF_8)).getAsJsonObject();
+                            merge(obj, keyMap, textMap);
+                            LOGGER.info("[自动汉化] 已加载外部词典: {}", p.getFileName());
+                        }
                     } catch (Exception e) {
                         LOGGER.warn("[自动汉化] 外部词典解析失败 {}: {}", p.getFileName(), e.toString());
                     }

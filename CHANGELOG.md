@@ -1,6 +1,16 @@
 ﻿# 自动汉化模组 更新日志
 
+## v1.5.3 (2026-10-10)
+
+### ✨ 功能
+- **渲染层拦截扩展**：新增 FormattedCharSequence 通道注入，覆盖 Configuration 库 / Puzzles Lib 等以 Component 直接渲染的配置界面文本（此前仅拦 String 入口，导致 Phoenix/Mob Lassos 配置界面英文）
+- 词典新增 50 条 byText 英文原文映射（Phoenix 配置项 31 + Mob Lassos 界面文本 19），渲染层直接命中翻译
+
+### 🔧 技术更新
+- FormattedCharSequence 通道仅做词典精确命中替换，不触发在线翻译，避免误翻聊天/告示牌等世界内容
+
 ## v1.5.2 (2026-10-10)
+ (2026-10-10)
 
 ### ✨ 功能
 - 词典扩充 60 条手工翻译：Phoenix（凤凰老虎机，35 键：物品/UI 按钮/配置项）与 Mob Lassos（生物套索，25 键：物品/附魔/音效/物品组）

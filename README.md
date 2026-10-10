@@ -100,8 +100,10 @@
 ```bash
 # 一键构建（自动设置 JDK 25 与 Gradle 缓存）
 build.bat
-# 产物：build/libs/autotranslate-1.5.0.jar
+# 产物：build/libs/autotranslate-1.5.1.jar
 ```
+
+> 构建依赖说明：编译期需要 Mod Menu jar（`libs/modmenu-*.jar`，请从 [Modrinth](https://modrinth.com/mod/modmenu) 官方渠道自行下载放置）。Mod Menu 为 **ARR（保留所有权利）** 许可证，**仅作编译期引用、不打入发布 jar、不随仓库分发**；未装 Mod Menu 不影响模组功能（仅无配置界面）。
 
 ## 技术要点
 

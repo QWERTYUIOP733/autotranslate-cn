@@ -27,3 +27,6 @@ Desktop.ini
 # 本地敏感信息
 *.tmp
 .gh_token*
+
+# 构建期依赖（Mod Menu jar 为 ARR 许可证，仅编译期使用，不随仓库/发布包分发）
+libs/

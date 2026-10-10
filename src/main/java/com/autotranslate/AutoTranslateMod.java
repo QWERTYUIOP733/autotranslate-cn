@@ -34,6 +34,9 @@ public class AutoTranslateMod implements ModInitializer {
                             })));
         });
 
+        // 启动时异步探测翻译服务可用性（结果仅记日志，便于诊断"在线兜底是否生效"）
+        OnlineTranslator.probeService();
+
         LOGGER.info("[自动汉化] 模组初始化完成（Minecraft 26.3 / Fabric）");
     }
 }

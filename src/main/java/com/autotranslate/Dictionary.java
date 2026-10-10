@@ -15,6 +15,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 翻译词典：
@@ -32,6 +35,18 @@ public final class Dictionary {
 
     private static volatile Map<String, String> byKey = Map.of();
     private static volatile Map<String, String> byText = Map.of();
+
+    /** 在线翻译结果缓冲：翻译线程写入，定时线程批量落盘（避免翻译风暴时每次全量 IO） */
+    private static final Map<String, String> PENDING_CACHE = new HashMap<>();
+    private static final ScheduledExecutorService CACHE_FLUSHER = Executors.newSingleThreadScheduledExecutor(r -> {
+        Thread t = new Thread(r, "autotranslate-cache-flush");
+        t.setDaemon(true);
+        return t;
+    });
+
+    static {
+        CACHE_FLUSHER.scheduleWithFixedDelay(Dictionary::flushCache, 5, 5, TimeUnit.SECONDS);
+    }
 
     private Dictionary() {
     }
@@ -157,8 +172,8 @@ public final class Dictionary {
 
     /**
      * 运行时新增一条 byText 翻译（英文原文 -> 中文）。
-     * 供在线翻译兜底使用：合并进内存词典，并追加持久化到 cache.json，
-     * 使下次启动（外部词典加载阶段）自动生效。
+     * 供在线翻译兜底使用：合并进内存词典，并缓冲追加到 cache.json
+     * （定时批量落盘），使下次启动（外部词典加载阶段）自动生效。
      */
     public static synchronized void addTextEntry(String englishText, String zh) {
         if (englishText == null || zh == null || englishText.isEmpty()) {
@@ -170,11 +185,21 @@ public final class Dictionary {
         }
         newText.put(englishText, zh);
         byText = Map.copyOf(newText);
-        appendCache(englishText, zh);
+        synchronized (PENDING_CACHE) {
+            PENDING_CACHE.put(englishText, zh);
+        }
     }
 
-    /** 追加在线翻译结果到 cache.json（结构式 {"byText": {...}}，自动并入外部词典加载） */
-    private static void appendCache(String englishText, String zh) {
+    /** 把缓冲的在线翻译结果合并写入 cache.json（由定时线程调用） */
+    private static void flushCache() {
+        Map<String, String> batch;
+        synchronized (PENDING_CACHE) {
+            if (PENDING_CACHE.isEmpty()) {
+                return;
+            }
+            batch = new HashMap<>(PENDING_CACHE);
+            PENDING_CACHE.clear();
+        }
         try {
             Path dir = ModConfig.getExternalDictDir();
             Files.createDirectories(dir);
@@ -190,12 +215,13 @@ public final class Dictionary {
                     // 缓存文件损坏时重建
                 }
             }
-            map.put(englishText, zh);
+            map.putAll(batch);
             JsonObject out = new JsonObject();
             JsonObject byTextObj = new JsonObject();
             map.forEach(byTextObj::addProperty);
             out.add("byText", byTextObj);
             Files.writeString(file, out.toString(), StandardCharsets.UTF_8);
+            LOGGER.info("[自动汉化] 在线翻译缓存已落盘：新增 {} 条，共 {} 条", batch.size(), map.size());
         } catch (IOException e) {
             LOGGER.warn("[自动汉化] 写入在线翻译缓存失败: {}", e.toString());
         }

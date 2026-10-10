@@ -1,5 +1,21 @@
 # 自动汉化模组 更新日志
 
+## v1.5.0 (2026-10-10)
+
+### ✨ 功能
+- **集成本地 AI 翻译引擎（Argos Translate）**：模组新增「翻译引擎」配置（自动识别 / 在线 Google / 本地 Argos），可接入本地部署的离线翻译服务——纯 CPU 推理、无需 GPU 显存、完全离线
+- 翻译服务地址可配置，一键指向本地服务；本地引擎与在线 Google 协议自动识别，无缝切换
+- 随模组配套发布「本地翻译服务」工具（install.bat / start.bat / service.py，D 盘），双击即可搭起本地 AI 翻译
+
+### 🔧 技术更新
+- OnlineTranslator 支持双协议解析：Google gtx（嵌套数组）与 Argos（translatedText JSON），auto 模式按响应结构自动识别
+- 本地服务使用 MiniSBD 分句器（纯本地，无需联网下载 stanza 资源）
+- 实测：Iron Sword→铁剑、Ignore Enforced As Editor→忽略已执行的编辑器、Hop to specified coordinates→跳转到指定的坐标
+
+### 📦 安装要求
+- Minecraft 26.3（Java 25）、Fabric Loader 0.19.5+、Fabric API 0.161.0+26.3
+- 本地 AI 翻译为可选功能：需 Python 3.9+（仅首次安装，服务运行时约 1GB 内存）
+
 ## v1.4.1 (2026-10-10)
 
 ### ✨ 功能

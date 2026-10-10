@@ -83,6 +83,23 @@ public class AutoTranslateConfigScreen extends Screen {
         addRenderableWidget(onlineBtn);
         y += SPACING;
 
+        // 翻译引擎：auto（自动识别）/ google（在线）/ argos（本地 Argos Translate 服务）
+        CycleButton<String> engineBtn = CycleButton.<String>builder(
+                        v -> Component.literal(
+                                "auto".equals(v) ? "自动识别" : "google".equals(v) ? "在线 Google" : "本地 Argos"),
+                        () -> ModConfig.getTranslateEngine())
+                .withValues("auto", "google", "argos")
+                .displayOnlyValue()
+                .create(centerX - WIDTH / 2, y, WIDTH, HEIGHT,
+                        Component.literal("翻译引擎"),
+                        (btn, val) -> {
+                            ModConfig.setTranslateEngine(val);
+                            ModConfig.save();
+                            AutoTranslateMod.LOGGER.info("[自动汉化] 配置界面：翻译引擎已改为 {}", val);
+                        });
+        addRenderableWidget(engineBtn);
+        y += SPACING;
+
         // 深度汉化：渲染层拦截硬编码英文文本（不走翻译系统的），三档
         CycleButton<Integer> deepBtn = CycleButton.<Integer>builder(
                         v -> Component.literal(v == 0 ? "关" : v == 1 ? "词典覆盖" : "全自动"),

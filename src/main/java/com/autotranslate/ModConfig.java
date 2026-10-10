@@ -29,6 +29,8 @@ public final class ModConfig {
     /** 在线翻译服务地址（URL 模板：%s 会被替换为 URL 编码后的英文文本） */
     private static String translateServiceUrl =
             "https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=zh-CN&dt=t&q=%s";
+    /** 翻译引擎：auto=按响应自动识别 google/argos；google=Google 免费接口；argos=本地 Argos Translate 服务 */
+    private static String translateEngine = "auto";
     /** 导出未覆盖翻译键：把运行时遇到的未翻译文本记录到 missing_zh_cn.txt，便于用户反馈/自译 */
     private static boolean exportMissing = true;
     /** 深度汉化（渲染层拦截硬编码文本）：0=关 1=词典覆盖（只翻已收录） 2=全自动（未收录短文本也联网翻译） */
@@ -57,6 +59,9 @@ public final class ModConfig {
                 if (obj.has("translateServiceUrl")) {
                     translateServiceUrl = obj.get("translateServiceUrl").getAsString();
                 }
+                if (obj.has("translateEngine")) {
+                    translateEngine = obj.get("translateEngine").getAsString();
+                }
                 if (obj.has("exportMissing")) {
                     exportMissing = obj.get("exportMissing").getAsBoolean();
                 }
@@ -72,6 +77,7 @@ public final class ModConfig {
             onlineTranslate = false;
             exportMissing = true;
             deepTranslate = 0;
+            translateEngine = "auto";
         }
         save();
     }
@@ -88,6 +94,7 @@ public final class ModConfig {
             obj.addProperty("externalDictDir", externalDictDir);
             obj.addProperty("onlineTranslate", onlineTranslate);
             obj.addProperty("translateServiceUrl", translateServiceUrl);
+            obj.addProperty("translateEngine", translateEngine);
             obj.addProperty("exportMissing", exportMissing);
             obj.addProperty("deepTranslate", deepTranslate);
             Files.writeString(file, obj.toString(), StandardCharsets.UTF_8);
@@ -124,6 +131,14 @@ public final class ModConfig {
 
     public static String getTranslateServiceUrl() {
         return translateServiceUrl;
+    }
+
+    public static String getTranslateEngine() {
+        return translateEngine;
+    }
+
+    public static void setTranslateEngine(String value) {
+        translateEngine = value;
     }
 
     public static boolean isExportMissing() {

@@ -2,6 +2,7 @@ package com.autotranslate;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.fabricmc.loader.api.FabricLoader;
 import org.slf4j.Logger;
@@ -123,7 +124,7 @@ public final class OnlineTranslator {
         HttpRequest req = HttpRequest.newBuilder()
                 .uri(URI.create(url))
                 .timeout(Duration.ofSeconds(8))
-                .header("User-Agent", "Mozilla/5.0 autotranslate/1.4")
+                .header("User-Agent", "Mozilla/5.0 autotranslate/1.5")
                 .GET()
                 .build();
         HttpResponse<String> resp = CLIENT.send(req, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
@@ -131,7 +132,34 @@ public final class OnlineTranslator {
             LOGGER.debug("[自动汉化] 翻译服务返回 {}: {}", resp.statusCode(), url);
             return null;
         }
-        return parseGtx(resp.body());
+        // 按配置引擎或响应结构自动识别协议
+        String engine = ModConfig.getTranslateEngine();
+        if ("google".equals(engine)) {
+            return parseGtx(resp.body());
+        }
+        if ("argos".equals(engine)) {
+            return parseArgos(resp.body());
+        }
+        // auto：Argos 响应含 translatedText 字段；Google 响应是嵌套数组
+        String body = resp.body();
+        if (body.contains("\"translatedText\"")) {
+            return parseArgos(body);
+        }
+        return parseGtx(body);
+    }
+
+    /** 解析 Argos Translate HTTP 服务返回：{"translatedText":"中文", ...} */
+    private static String parseArgos(String body) {
+        try {
+            JsonObject obj = JsonParser.parseString(body).getAsJsonObject();
+            if (obj.has("translatedText") && obj.get("translatedText").isJsonPrimitive()) {
+                String t = obj.get("translatedText").getAsString();
+                return t.isEmpty() ? null : t;
+            }
+        } catch (Exception e) {
+            LOGGER.debug("[自动汉化] Argos 翻译响应解析失败: {}", body);
+        }
+        return null;
     }
 
     /** 解析 Google gtx 接口返回：[[["译文","原文",null,null,10]],null,"en",...] */

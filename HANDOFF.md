@@ -31,6 +31,8 @@
 | 合规 | 三轮自查通过；2026-10-12 已重写全部 git 历史清除侵权材料（见 §11） |
 | **唯一未完成主线** | **Task #44：三轮游戏内自检验收（等待用户游戏内截图反馈）** |
 
+> **2026-10-17 归档清理记录**：开发过程中的临时核验目录、一次性脚本目录、构建中间产物已清理（共约 576 MB）：`D:\modtmp\`、`D:\豆包工作区\构建日志\`、工程 `build\`、工程 `.gradle\`。这些均为可再生的中间产物（重新构建/按需重写脚本即可恢复）。本文后续若出现这些路径，仅代表历史方法描述，需要时按同样方法**自建**目录（例如新建 ASCII 临时目录 `D:\modwork\`）。工程源码、本地翻译服务、独立词典仓库、发布 jar、工具链（JDK/Gradle 缓存）均完整保留。
+
 ---
 
 ## 3. 技术架构：三级翻译覆盖体系
@@ -107,7 +109,7 @@ local-translator/                  # Argos 本地服务的入库副本（service
 - 模组自带 `zh_cn.json` 优先于 CFPA（尊重模组自带翻译）。
 
 改词典工作流（勿手改内置大文件后忘记重建）：
-1. 写脚本 `D:\豆包工作区\构建日志\gen_*.py`：读 extra_zh_cn.json → 合并新增 → 写回；
+1. 写一个临时 python 脚本（放自选目录，用完可删）：读 extra_zh_cn.json → 合并新增 → 写回；
 2. 重新 `gradlew build`；
 3. 部署 + 发版。
 
@@ -210,9 +212,9 @@ $env:JAVA_HOME="D:\dev\jdk-25"; $env:GRADLE_USER_HOME="D:\dev\gradle-home"
 
 ## 12. 已验证的硬性坑（接手者勿重试）
 
-1. PowerShell 5.1：中文路径/中文参数传外部 exe（jar/javap/git）会乱码损坏 → 先拷到 ASCII 临时目录（如 `D:\modtmp\`）。
-2. PS stdout 常被吞/乱码 → 高危/核查操作**落盘 `D:\modtmp\*.txt` 再 Read**。
-3. Python 内联 `-c` 带中文/三引号有坑 → 写成 `D:\豆包工作区\构建日志\*.py` 脚本文件执行。
+1. PowerShell 5.1：中文路径/中文参数传外部 exe（jar/javap/git）会乱码损坏 → 先拷到自建 ASCII 临时目录（如 `D:\modwork\`，用后可删）。
+2. PS stdout 常被吞/乱码 → 高危/核查操作**落盘到该临时目录的 txt 再 Read**。
+3. Python 内联 `-c` 带中文/三引号有坑 → 写成 `.py` 脚本文件（ASCII 路径）再执行。
 4. 游戏运行中 jar 被锁删不掉；mods 双版本并存 → Fabric 加载旧版；部署前清旧版。
 5. CFPA main 分支 `zh_cn.lang` 404；Modrinth API 查询参数必须 urlencode（`game_versions=["26.3"]` 裸传会 400）。
 6. `Language.getOrDefault(String,String)` 26.3 为抽象方法，Mixin 无法注入 → 自渲染文本只能走 FCS 通道。
@@ -243,7 +245,6 @@ $env:JAVA_HOME="D:\dev\jdk-25"; $env:GRADLE_USER_HOME="D:\dev\gradle-home"
 | 测试 config | `…\26.3-Fabric 0.19.5\config\autotranslate\config.json` |
 | 缺失/缓存词典 | `…\config\autotranslate\dict\` |
 | 本地 AI 服务 | `D:\豆包工作区\本地翻译服务\`（venv，端口 5000） |
-| 脚本与日志 | `D:\豆包工作区\构建日志\` |
-| 临时核验输出 | `D:\modtmp\*.txt`（ASCII 路径，规避中文乱码） |
+| 临时核验输出 | 自建 ASCII 临时目录（如 `D:\modwork\`，规避中文乱码，用后可删） |
 | GitHub | `https://github.com/QWERTYUIOP733/autotranslate-cn` |
 | 内置 git | `C:\Users\zhoujiayi\AppData\Local\GitHubDesktop\app-3.6.5\resources\app\git\cmd\git.exe` |
